@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Корзина | Интернет-магазин</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div id="notification-area"></div>
+
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-store"></i>
+                    <span>Магазин</span>
+                </a>
+                
+                <div class="header-icons">
+                    <a href="index.html" class="cart-icon">
+                        <i class="fas fa-home"></i>
+                        <span>Каталог</span>
+                    </a>
+                    <a href="orders.html" class="user-icon">
+                        <i class="fas fa-user"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <section class="cart-section">
+            <h2>Корзина</h2>
+            
+            <div id="cart-items-container">
+                <div class="loading">Загрузка корзины...</div>
+            </div>
+        </section>
+        
+        <section class="order-form-section">
+            <h2>Оформление заказа</h2>
+            
+            <form id="order-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="full_name">Имя</label>
+                        <input type="text" id="full_name" name="full_name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Телефон</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox">
+                        <input type="checkbox" id="subscribe" name="subscribe">
+                        Подписаться на рассылку
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="delivery_address">Адрес доставки</label>
+                    <input type="text" id="delivery_address" name="delivery_address" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="delivery_date">Дата доставки</label>
+                        <input type="date" id="delivery_date" name="delivery_date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="delivery_interval">Временной интервал доставки</label>
+                        <select id="delivery_interval" name="delivery_interval" required>
+                            <option value="">Выберите интервал</option>
+                            <option value="08:00-12:00">08:00 - 12:00</option>
+                            <option value="12:00-14:00">12:00 - 14:00</option>
+                            <option value="14:00-18:00">14:00 - 18:00</option>
+                            <option value="18:00-22:00">18:00 - 22:00</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="comment">Комментарий к заказу</label>
+                    <textarea id="comment" name="comment" rows="4"></textarea>
+                </div>
+                
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>Стоимость товаров:</span>
+                        <span id="goods-total">0 ₽</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Стоимость доставки:</span>
+                        <span id="delivery-cost">0 ₽</span>
+                    </div>
+                    <div class="summary-row total">
+                        <strong>Итоговая стоимость:</strong>
+                        <strong id="total-cost">0 ₽</strong>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="reset-btn" class="btn btn-secondary">Сбросить</button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary">Оформить заказ</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 Название компании</p>
+                <p>Телефон: +7 (495) 123-45-67 | Email: info@store.ru</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="js/cart.js"></script>
+</body>
+</html>

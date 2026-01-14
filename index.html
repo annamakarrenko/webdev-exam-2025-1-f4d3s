@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интернет-магазин | Главная</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div id="notification-area"></div>
+
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-store"></i>
+                    <span>Магазин</span>
+                </a>
+                
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Введите запрос...">
+                    <button id="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <div class="header-icons">
+                    <a href="cart.html" class="cart-icon" id="cart-link">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-counter">0</span>
+                    </a>
+                    <a href="orders.html" class="user-icon">
+                        <i class="fas fa-user"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <aside class="sidebar">
+            <div class="filters-section">
+                <h3>Категории</h3>
+                <div id="categories-list"></div>
+                
+                <h3>Стоимость</h3>
+                <div class="price-range">
+                    <div class="price-input">
+                        <label>От
+                            <input type="number" id="price-from" min="0" placeholder="100">
+                        </label>
+                    </div>
+                    <div class="price-input">
+                        <label>До
+                            <input type="number" id="price-to" min="0" placeholder="5000">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="discount-filter">
+                    <label class="checkbox">
+                        <input type="checkbox" id="discount-only">
+                        Только товары со скидками
+                    </label>
+                </div>
+                
+                <button id="apply-filters" class="btn btn-primary">Применить</button>
+            </div>
+        </aside>
+
+        <section class="catalog-section">
+            <div class="catalog-header">
+                <h2>Каталог</h2>
+                <div class="sort-container">
+                    <select id="sort-order">
+                        <option value="">По умолчанию</option>
+                        <option value="rating_desc">По убыванию рейтинга</option>
+                        <option value="rating_asc">По возрастанию рейтинга</option>
+                        <option value="price_desc">По убыванию цены</option>
+                        <option value="price_asc">По возрастанию цены</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="catalog-grid" id="catalog"></div>
+            
+            <div class="load-more-container">
+                <button id="load-more" class="btn btn-secondary">Загрузить ещё</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 Название компании</p>
+                <p>Телефон: +7 (495) 123-45-67 | Email: info@store.ru</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
