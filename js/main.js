@@ -1,3 +1,5 @@
+import { phonesData } from './phones.js';
+
 let currentPage = 1;
 let currentSort = '';
 let currentFilters = {};
@@ -167,24 +169,9 @@ function createProductCard(product) {
     const cart = JSON.parse(localStorage.getItem('shopzone_cart') || '[]');
     const inCart = cart.includes(product.id.toString());
     
-    const brandColors = {
-        apple: '#a2aaad',
-        samsung: '#1428a0',
-        xiaomi: '#ff6900',
-        google: '#4285f4',
-        huawei: '#ff0000',
-        other: '#666666'
-    };
-    
-    const brand = product.brand || 'other';
-    const color = brandColors[brand] || '#666666';
-    const brandName = product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : 'Phone';
-    
-    const imageUrl = `https://via.placeholder.com/300x300/${color.replace('#', '')}/ffffff?text=${encodeURIComponent(brandName)}`;
-    
     card.innerHTML = `
         <div class="product-image">
-            <img src="${imageUrl}" 
+            <img src="${product.image_url || 'images/placeholder.jpg'}" 
                  alt="${product.name}"
                  onerror="this.onerror=null; this.src='images/placeholder.jpg'">
         </div>
@@ -195,7 +182,6 @@ function createProductCard(product) {
             <div class="product-rating">
                 <span class="stars">${generateStars(product.rating || 0)}</span>
                 <span class="rating-value">${(product.rating || 0).toFixed(1)}</span>
-                ${product.brand ? `<span class="product-brand">${product.brand}</span>` : ''}
             </div>
             <div class="product-details">
                 ${product.storage ? `<span class="detail">${product.storage}</span>` : ''}
@@ -220,7 +206,7 @@ function createProductCard(product) {
     `;
     
     const addButton = card.querySelector('.add-to-cart-btn');
-    addButton.addEventListener('click', async function() {
+    addButton.addEventListener('click', function() {
         const productId = this.dataset.id;
         
         if (addToCart(productId)) {
@@ -270,7 +256,8 @@ function truncateText(text, maxLength) {
 function updatePageInfo() {
     const pageInfo = document.getElementById('page-info');
     if (pageInfo) {
-        pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+        const totalProducts = phonesData.length;
+        pageInfo.textContent = `Страница ${currentPage} из ${totalPages} (Всего товаров: ${totalProducts})`;
     }
 }
 
@@ -499,16 +486,6 @@ style.textContent = `
     
     .error {
         color: #ef476f;
-    }
-    
-    .product-brand {
-        display: inline-block;
-        background: #f0f0f0;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        margin-left: 10px;
-        color: #666;
     }
     
     .product-details {

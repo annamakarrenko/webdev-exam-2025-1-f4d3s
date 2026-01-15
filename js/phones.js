@@ -1,3 +1,4 @@
+
 const phonesData = [
     {
         id: 101,
@@ -184,7 +185,7 @@ const phonesData = [
         name: "Huawei Nova 11 256GB",
         main_category: "smartphones",
         sub_category: "huawei",
-        image_url: "images/huawei/15promax.jpg",
+        image_url: "images/huawei/nova.jpg",
         rating: 4.0,
         actual_price: 32990,
         discount_price: 29990,
@@ -229,7 +230,7 @@ const phonesData = [
         name: "Xiaomi 13T Pro 512GB",
         main_category: "smartphones",
         sub_category: "xiaomi",
-        image_url: "",
+        image_url: "images/xiaomi/13.jpg",
         rating: 4.4,
         actual_price: 59990,
         discount_price: 55990,
@@ -244,7 +245,7 @@ const phonesData = [
         name: "Nothing Phone (2) 256GB",
         main_category: "smartphones",
         sub_category: "other",
-        image_url: "",
+        image_url: "images/other/nothingphone2.jpg",
         rating: 4.3,
         actual_price: 54990,
         discount_price: null,
@@ -391,18 +392,18 @@ const phonesData = [
     },
     {
         id: 127,
-        name: "Apple iPhone 15 128GB",
+        name: "Apple iPhone 17 Pro Max 256GB",
         main_category: "smartphones",
         sub_category: "apple",
-        image_url: "",
+        image_url: "images/apple/17.jpg",
         rating: 4.5,
         actual_price: 79990,
         discount_price: 76990,
         created_at: "2024-01-13T10:25:00",
         brand: "apple",
-        storage: "128GB",
-        color: "Желтый",
-        os: "iOS 17"
+        storage: "256GB",
+        color: "Оранжевый",
+        os: "iOS 26"
     },
     {
         id: 128,
@@ -450,3 +451,4 @@ const phonesData = [
         os: "Android 13"
     }
 ];
+

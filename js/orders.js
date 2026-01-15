@@ -1,6 +1,9 @@
 let allOrders = [];
 let allProducts = {};
 
+// Импортируем phonesData для работы с товарами
+let phonesData = [];
+
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
     await loadOrders();
@@ -18,6 +21,14 @@ async function loadOrders() {
         if (allOrders.length === 0) {
             ordersContainer.innerHTML = '<div class="no-orders">У вас пока нет заказов.</div>';
             return;
+        }
+        
+        // Загружаем phonesData
+        try {
+            const module = await import('./phones.js');
+            phonesData = module.phonesData;
+        } catch (error) {
+            console.error('Ошибка загрузки данных о товарах:', error);
         }
         
         await loadProductsInfo();
@@ -39,7 +50,7 @@ async function loadProductsInfo() {
     
     for (const productId of productIds) {
         if (!allProducts[productId]) {
-            const product = await fetchProduct(productId);
+            const product = phonesData.find(p => p.id == productId);
             if (product) {
                 allProducts[productId] = product;
             }
@@ -82,7 +93,7 @@ function renderOrders() {
                 <td>${index + 1}</td>
                 <td>${orderDate}</td>
                 <td title="${composition}">${truncateText(composition, 50)}</td>
-                <td>${total} ₽</td>
+                <td>${formatPrice(total)} ₽</td>
                 <td>${deliveryInfo}</td>
                 <td>
                     <div class="actions">
@@ -116,6 +127,11 @@ function formatDateTime(dateTimeStr) {
         hour: '2-digit', 
         minute: '2-digit' 
     });
+}
+
+function formatPrice(price) {
+    if (!price) return '0';
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function getOrderComposition(order) {
@@ -154,6 +170,7 @@ function truncateText(text, maxLength) {
     return text.substring(0, maxLength) + '...';
 }
 
+// Глобальные функции для модальных окон
 window.viewOrder = async function(orderId) {
     const order = allOrders.find(o => o.id == orderId);
     if (!order) return;
@@ -215,7 +232,7 @@ window.viewOrder = async function(orderId) {
             
             <div class="detail-item total">
                 <strong>Стоимость:</strong>
-                <span class="price">${total} ₽</span>
+                <span class="price">${formatPrice(total)} ₽</span>
             </div>
         </div>
         
@@ -287,7 +304,7 @@ window.editOrder = async function(orderId) {
             <div class="order-summary">
                 <div class="summary-item total">
                     <strong>Стоимость заказа:</strong>
-                    <strong class="price">${total} ₽</strong>
+                    <strong class="price">${formatPrice(total)} ₽</strong>
                 </div>
             </div>
             
@@ -339,6 +356,7 @@ async function updateOrderHandler(orderId) {
         comment: formData.get('comment')
     };
     
+    // Форматируем дату для API
     if (orderData.delivery_date) {
         const date = new Date(orderData.delivery_date);
         const day = String(date.getDate()).padStart(2, '0');

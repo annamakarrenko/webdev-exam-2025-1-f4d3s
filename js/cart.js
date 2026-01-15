@@ -1,6 +1,9 @@
 let cartItems = [];
 let goodsTotal = 0;
 
+// Импортируем phonesData для работы с товарами
+let phonesData = [];
+
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
     await loadCartItems();
@@ -26,9 +29,17 @@ async function loadCartItems() {
     emptyCartContainer.style.display = 'none';
     cartItemsContainer.innerHTML = '<div class="loading">Загрузка корзины...</div>';
     
+    // Загружаем phonesData
+    try {
+        const module = await import('./phones.js');
+        phonesData = module.phonesData;
+    } catch (error) {
+        console.error('Ошибка загрузки данных о товарах:', error);
+    }
+    
     cartItems = [];
     for (const productId of cart) {
-        const product = await fetchProduct(productId);
+        const product = phonesData.find(p => p.id == productId);
         if (product) {
             cartItems.push(product);
         }
@@ -74,11 +85,11 @@ function createCartItem(product) {
             </div>
             <div class="cart-item-price">
                 ${hasDiscount ? `
-                    <span class="old-price">${product.actual_price} ₽</span>
-                    <span class="current-price">${product.discount_price} ₽</span>
+                    <span class="old-price">${formatPrice(product.actual_price)} ₽</span>
+                    <span class="current-price">${formatPrice(product.discount_price)} ₽</span>
                     <span class="discount-badge">-${discountPercent}%</span>
                 ` : `
-                    <span class="current-price">${product.actual_price} ₽</span>
+                    <span class="current-price">${formatPrice(product.actual_price)} ₽</span>
                 `}
             </div>
             <div class="cart-item-actions">
@@ -123,6 +134,11 @@ function generateStars(rating) {
     return stars;
 }
 
+function formatPrice(price) {
+    if (!price) return '0';
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 function updateTotalPrices() {
     goodsTotal = cartItems.reduce((total, product) => {
         const price = product.discount_price && product.discount_price < product.actual_price 
@@ -135,9 +151,9 @@ function updateTotalPrices() {
     const deliveryInterval = document.getElementById('delivery_interval').value;
     const deliveryCost = calculateDeliveryCost(deliveryDate, deliveryInterval);
     
-    document.getElementById('products-total').textContent = `${goodsTotal} ₽`;
-    document.getElementById('delivery-cost').textContent = `${deliveryCost} ₽`;
-    document.getElementById('order-total').textContent = `${goodsTotal + deliveryCost} ₽`;
+    document.getElementById('products-total').textContent = `${formatPrice(goodsTotal)} ₽`;
+    document.getElementById('delivery-cost').textContent = `${formatPrice(deliveryCost)} ₽`;
+    document.getElementById('order-total').textContent = `${formatPrice(goodsTotal + deliveryCost)} ₽`;
 }
 
 function setMinDeliveryDate() {
@@ -210,6 +226,7 @@ async function submitOrder(event) {
         good_ids: cartItems.map(item => item.id)
     };
     
+    // Форматируем дату в формат dd.mm.yyyy для API
     if (orderData.delivery_date) {
         const date = new Date(orderData.delivery_date);
         const day = String(date.getDate()).padStart(2, '0');
@@ -228,6 +245,8 @@ async function submitOrder(event) {
         clearCart();
         updateCartCounter();
         
+        showNotification('Заказ успешно оформлен! Через 2 секунды вы будете перенаправлены на главную страницу.', 'success');
+        
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
@@ -238,5 +257,7 @@ async function submitOrder(event) {
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-check"></i> Оформить';
+        
+        showNotification(`Ошибка оформления заказа: ${error.message}`, 'error');
     }
 }

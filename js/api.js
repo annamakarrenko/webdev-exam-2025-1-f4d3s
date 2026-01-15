@@ -1,6 +1,7 @@
 const API_BASE_URL = 'https://edu.std-900.ist.mospolytech.ru/exam-2024-1/api';
 const API_KEY = '6a48b49a-943d-4bd4-868c-94a15212daff';
 
+// Функция для отображения уведомлений
 function showNotification(message, type = 'info') {
     const notificationArea = document.getElementById('notification-area');
     if (!notificationArea) return;
@@ -16,66 +17,7 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-async function fetchGoods(page = 1, perPage = 12, sortOrder = null, filters = {}) {
-    let url = `${API_BASE_URL}/goods?api_key=${API_KEY}&page=${page}&per_page=${perPage}`;
-    
-    if (sortOrder) {
-        url += `&sort_order=${sortOrder}`;
-    }
-    
-    if (filters.category) {
-        url += `&main_category=${encodeURIComponent(filters.category)}`;
-    }
-    
-    if (filters.minPrice) {
-        url += `&min_price=${filters.minPrice}`;
-    }
-    
-    if (filters.maxPrice) {
-        url += `&max_price=${filters.maxPrice}`;
-    }
-    
-    if (filters.discountOnly) {
-        url += '&discount_only=true';
-    }
-    
-    if (filters.query) {
-        url += `&query=${encodeURIComponent(filters.query)}`;
-    }
-    
-    try {
-        const response = await fetch(url);
-        
-        if (response.status === 401) {
-            showNotification('Ошибка авторизации. Проверьте API ключ.', 'error');
-            throw new Error('Unauthorized');
-        }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data._pagination) {
-            return {
-                goods: data.goods || [],
-                pagination: data._pagination
-            };
-        }
-        
-        return {
-            goods: data,
-            pagination: null
-        };
-        
-    } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
-        showNotification('Ошибка загрузки товаров', 'error');
-        return { goods: [], pagination: null };
-    }
-}
-
+// Работа с заказами через API
 async function fetchOrders() {
     const url = `${API_BASE_URL}/orders?api_key=${API_KEY}`;
     
@@ -174,34 +116,7 @@ async function deleteOrder(orderId) {
     }
 }
 
-async function fetchProduct(productId) {
-    const url = `${API_BASE_URL}/goods/${productId}?api_key=${API_KEY}`;
-    
-    try {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Ошибка загрузки товара:', error);
-        return null;
-    }
-}
-
-async function fetchCategories() {
-    try {
-        const data = await fetchGoods(1, 100);
-        const categories = [...new Set(data.goods.map(good => good.main_category).filter(Boolean))];
-        return categories.sort();
-    } catch (error) {
-        console.error('Ошибка загрузки категорий:', error);
-        return [];
-    }
-}
-
+// Работа с корзиной в localStorage
 const CART_STORAGE_KEY = 'shopzone_cart';
 
 function getCart() {
@@ -216,8 +131,8 @@ function saveCart(cart) {
 function addToCart(productId) {
     const cart = getCart();
     
-    if (!cart.includes(productId)) {
-        cart.push(productId);
+    if (!cart.includes(productId.toString())) {
+        cart.push(productId.toString());
         saveCart(cart);
         updateCartCounter();
         showNotification('Товар добавлен в корзину', 'success');
@@ -230,9 +145,10 @@ function addToCart(productId) {
 
 function removeFromCart(productId) {
     let cart = getCart();
-    cart = cart.filter(id => id != productId);
+    cart = cart.filter(id => id != productId.toString());
     saveCart(cart);
     updateCartCounter();
+    showNotification('Товар удален из корзины', 'info');
 }
 
 function clearCart() {
@@ -249,21 +165,47 @@ function updateCartCounter() {
     }
 }
 
+// Расчет стоимости доставки
 function calculateDeliveryCost(deliveryDate, deliveryInterval) {
-    let cost = 200;
+    let cost = 200; // Базовая стоимость
     
     if (!deliveryDate || !deliveryInterval) return cost;
     
     const date = new Date(deliveryDate);
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = date.getDay(); // 0 - воскресенье, 6 - суббота
     
+    // В выходные дни +300 руб
     if (dayOfWeek === 0 || dayOfWeek === 6) {
         cost += 300;
     }
     
+    // В будние дни в вечерние часы +200 руб
     if (deliveryInterval === '18:00-22:00' && dayOfWeek >= 1 && dayOfWeek <= 5) {
         cost += 200;
     }
     
     return cost;
+}
+
+// Функция для получения товара по ID (из локальных данных)
+async function fetchProduct(productId) {
+    // Импортируем phonesData динамически
+    try {
+        const { phonesData } = await import('./phones.js');
+        return phonesData.find(phone => phone.id == productId) || null;
+    } catch (error) {
+        console.error('Ошибка загрузки товара:', error);
+        return null;
+    }
+}
+
+// Функция для получения всех товаров (для фильтрации категорий)
+async function getAllProducts() {
+    try {
+        const { phonesData } = await import('./phones.js');
+        return phonesData;
+    } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+        return [];
+    }
 }
