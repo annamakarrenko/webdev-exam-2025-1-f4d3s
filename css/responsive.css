@@ -1,5 +1,12 @@
+/* Адаптивные стили */
+@media (max-width: 1200px) {
+    .container {
+        padding: 0 15px;
+    }
+}
+
 @media (max-width: 992px) {
-    .main-content {
+    .main-layout {
         flex-direction: column;
     }
     
@@ -7,53 +14,175 @@
         width: 100%;
     }
     
-    .catalog-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .search-bar {
+        width: 100%;
+        max-width: 100%;
+        margin: 10px 0;
+    }
+    
+    .header-icons {
+        width: 100%;
+        justify-content: center;
     }
 }
 
 @media (max-width: 768px) {
-    .header-content {
-        flex-wrap: wrap;
-    }
-    
-    .search-container {
-        order: 3;
-        width: 100%;
-        margin: 15px 0 0 0;
-        max-width: 100%;
-    }
-    
-    .catalog-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
-    }
-    
-    .product-name {
-        font-size: 0.9rem;
-    }
-    
-    .product-price {
-        flex-wrap: wrap;
-    }
-}
-
-@media (max-width: 576px) {
-    .container {
-        padding: 0 15px;
-    }
-    
-    .catalog-grid {
-        grid-template-columns: 1fr;
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .catalog-header {
         flex-direction: column;
-        gap: 15px;
         align-items: stretch;
     }
     
     .sort-container select {
         width: 100%;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .footer-info {
+        text-align: center;
+    }
+    
+    .cart-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .cart-item-image {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 576px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .price-filters {
+        flex-direction: column;
+    }
+    
+    .orders-table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .modal {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+/* Мобильная навигация */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--dark-color);
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .header-icons {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: white;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        padding: 20px;
+    }
+    
+    .header-icons.active {
+        display: flex;
+    }
+}
+
+/* Планшеты */
+@media (min-width: 577px) and (max-width: 768px) {
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Адаптация текста */
+@media (max-width: 480px) {
+    h2 {
+        font-size: 24px;
+    }
+    
+    h3 {
+        font-size: 18px;
+    }
+    
+    .product-title {
+        font-size: 14px;
+    }
+    
+    .current-price {
+        font-size: 18px;
+    }
+    
+    .notification {
+        min-width: 250px;
+        font-size: 14px;
+        padding: 12px 15px;
+    }
+}
+
+/* Высокие экраны */
+@media (min-height: 800px) {
+    .main-layout {
+        min-height: calc(100vh - 200px);
+    }
+}
+
+/* Темная тема (опционально) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dark-color: #f5f5f5;
+        --light-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --border-color: #444;
+    }
+    
+    body {
+        background-color: #121212;
+        color: var(--text-color);
+    }
+    
+    .product-card,
+    .filters-card,
+    .order-form-section,
+    .cart-item {
+        background-color: #2d2d2d;
+        color: var(--text-color);
+    }
+    
+    .footer {
+        background-color: #1a1a1a;
     }
 }

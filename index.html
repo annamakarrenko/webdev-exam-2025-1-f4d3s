@@ -3,11 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Интернет-магазин | Главная</title>
+    <title>ShopZone | Главная</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
+    <style>
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #ff6b6b;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .logo-icon {
+            font-size: 28px;
+            margin-right: 10px;
+            color: #ff6b6b;
+        }
+        .notification {
+            padding: 15px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .info { background: #2196F3; }
+    </style>
 </head>
 <body>
     <div id="notification-area"></div>
@@ -16,66 +42,84 @@
         <div class="container">
             <div class="header-content">
                 <a href="index.html" class="logo">
-                    <i class="fas fa-store"></i>
-                    <span>Магазин</span>
+                    <i class="fas fa-shopping-bag logo-icon"></i>
+                    ShopZone
                 </a>
                 
-                <div class="search-container">
-                    <input type="text" id="search-input" placeholder="Введите запрос...">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Введите запрос (телефон, iphone, samsung...)">
                     <button id="search-btn">
-                        <i class="fas fa-search"></i>
+                        <i class="fas fa-search"></i> Найти
                     </button>
                 </div>
                 
                 <div class="header-icons">
-                    <a href="cart.html" class="cart-icon" id="cart-link">
+                    <a href="cart.html" class="icon-link" id="cart-link">
                         <i class="fas fa-shopping-cart"></i>
-                        <span id="cart-counter">0</span>
+                        <span class="badge" id="cart-counter">0</span>
+                        <span class="icon-text">Корзина</span>
                     </a>
-                    <a href="orders.html" class="user-icon">
+                    <a href="orders.html" class="icon-link">
                         <i class="fas fa-user"></i>
+                        <span class="icon-text">Кабинет</span>
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="container main-content">
+    <main class="container main-layout">
         <aside class="sidebar">
-            <div class="filters-section">
-                <h3>Категории</h3>
-                <div id="categories-list"></div>
+            <div class="filters-card">
+                <h3>Фильтры</h3>
                 
-                <h3>Стоимость</h3>
-                <div class="price-range">
-                    <div class="price-input">
-                        <label>От
-                            <input type="number" id="price-from" min="0" placeholder="100">
-                        </label>
+                <div class="filter-section">
+                    <h4>Категории</h4>
+                    <div id="categories-list">
+                        <div class="loading">Загрузка категорий...</div>
                     </div>
-                    <div class="price-input">
-                        <label>До
-                            <input type="number" id="price-to" min="0" placeholder="5000">
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Стоимость</h4>
+                    <div class="price-filters">
+                        <div class="price-input-group">
+                            <label>От</label>
+                            <input type="number" id="price-min" min="0" placeholder="100">
+                            <span class="currency">₽</span>
+                        </div>
+                        <div class="price-input-group">
+                            <label>До</label>
+                            <input type="number" id="price-max" min="0" placeholder="500000">
+                            <span class="currency">₽</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="discount-filter">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="discount-only">
+                            <span class="checkmark"></span>
+                            Только товары со скидками
                         </label>
                     </div>
                 </div>
                 
-                <div class="discount-filter">
-                    <label class="checkbox">
-                        <input type="checkbox" id="discount-only">
-                        Только товары со скидками
-                    </label>
-                </div>
-                
-                <button id="apply-filters" class="btn btn-primary">Применить</button>
+                <button id="apply-filters" class="btn apply-btn">
+                    <i class="fas fa-check"></i> Применить
+                </button>
+                <button id="reset-filters" class="btn reset-btn">
+                    <i class="fas fa-redo"></i> Сбросить
+                </button>
             </div>
         </aside>
 
-        <section class="catalog-section">
+        <section class="content">
             <div class="catalog-header">
                 <h2>Каталог</h2>
                 <div class="sort-container">
-                    <select id="sort-order">
+                    <select id="sort-select">
                         <option value="">По умолчанию</option>
                         <option value="rating_desc">По убыванию рейтинга</option>
                         <option value="rating_asc">По возрастанию рейтинга</option>
@@ -85,10 +129,15 @@
                 </div>
             </div>
             
-            <div class="catalog-grid" id="catalog"></div>
+            <div class="products-grid" id="products-grid">
+                <div class="loading">Загрузка товаров...</div>
+            </div>
             
             <div class="load-more-container">
-                <button id="load-more" class="btn btn-secondary">Загрузить ещё</button>
+                <button id="load-more" class="btn load-more-btn">
+                    <i class="fas fa-arrow-down"></i> Загрузить ещё
+                </button>
+                <div class="page-info" id="page-info"></div>
             </div>
         </section>
     </main>
@@ -96,13 +145,22 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <p>&copy; 2025 Название компании</p>
-                <p>Телефон: +7 (495) 123-45-67 | Email: info@store.ru</p>
+                <div class="footer-logo">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>ShopZone</span>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2025 ShopZone. Все права защищены.</p>
+                    <p>Телефон: +7 (495) 123-45-67</p>
+                    <p>Email: info@shopzone.ru</p>
+                    <p>Адрес: г. Москва, ул. Примерная, 10</p>
+                </div>
             </div>
         </div>
     </footer>
 
     <script src="js/api.js"></script>
+    <script src="js/phones.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

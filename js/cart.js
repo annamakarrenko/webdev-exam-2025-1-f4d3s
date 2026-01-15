@@ -1,51 +1,30 @@
-import {
-    showNotification,
-    fetchProduct,
-    createOrder,
-    getCart,
-    removeFromCart,
-    clearCart,
-    updateCartCounter
-} from './api.js';
-
 let cartItems = [];
 let goodsTotal = 0;
-let deliveryCost = 0;
 
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
-    
     await loadCartItems();
-    
-    initEventListeners();
-    
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const deliveryDate = document.getElementById('delivery_date');
-    if (deliveryDate) {
-        deliveryDate.min = tomorrow.toISOString().split('T')[0];
-        deliveryDate.value = tomorrow.toISOString().split('T')[0];
-    }
+    setupEventListeners();
+    setMinDeliveryDate();
 });
 
 async function loadCartItems() {
-    const cartContainer = document.getElementById('cart-items-container');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const emptyCartContainer = document.getElementById('empty-cart');
     const cart = getCart();
     
-    if (!cartContainer) return;
+    if (!cartItemsContainer || !emptyCartContainer) return;
     
     if (cart.length === 0) {
-        cartContainer.innerHTML = `
-            <div class="empty-cart">
-                <p>Корзина пуста. Перейдите в каталог, чтобы добавить товары.</p>
-                <a href="index.html" class="btn btn-primary">В каталог</a>
-            </div>
-        `;
+        cartItemsContainer.style.display = 'none';
+        emptyCartContainer.style.display = 'block';
         updateTotalPrices();
         return;
     }
     
-    cartContainer.innerHTML = '<div class="loading">Загрузка товаров...</div>';
+    cartItemsContainer.style.display = 'block';
+    emptyCartContainer.style.display = 'none';
+    cartItemsContainer.innerHTML = '<div class="loading">Загрузка корзины...</div>';
     
     cartItems = [];
     for (const productId of cart) {
@@ -54,21 +33,20 @@ async function loadCartItems() {
             cartItems.push(product);
         }
     }
-
+    
     renderCartItems();
     updateTotalPrices();
 }
 
 function renderCartItems() {
-    const cartContainer = document.getElementById('cart-items-container');
+    const cartItemsContainer = document.getElementById('cart-items');
+    if (!cartItemsContainer || cartItems.length === 0) return;
     
-    if (!cartContainer || cartItems.length === 0) return;
-    
-    cartContainer.innerHTML = '';
+    cartItemsContainer.innerHTML = '';
     
     cartItems.forEach(product => {
         const cartItem = createCartItem(product);
-        cartContainer.appendChild(cartItem);
+        cartItemsContainer.appendChild(cartItem);
     });
 }
 
@@ -79,43 +57,42 @@ function createCartItem(product) {
     
     const hasDiscount = product.discount_price && product.discount_price < product.actual_price;
     const price = hasDiscount ? product.discount_price : product.actual_price;
+    const discountPercent = hasDiscount ? 
+        Math.round((1 - product.discount_price / product.actual_price) * 100) : 0;
     
     item.innerHTML = `
-        <div class="cart-item-content">
-            <div class="cart-item-image">
-                <img src="${product.image_url || 'images/placeholder.jpg'}" 
-                     alt="${product.name}"
-                     onerror="this.src='images/placeholder.jpg'">
+        <div class="cart-item-image">
+            <img src="${product.image_url || 'images/placeholder.jpg'}" 
+                 alt="${product.name}"
+                 onerror="this.src='images/placeholder.jpg'">
+        </div>
+        <div class="cart-item-info">
+            <h3 class="cart-item-name">${product.name}</h3>
+            <div class="product-rating">
+                <span class="stars">${generateStars(product.rating || 0)}</span>
+                <span class="rating-value">${(product.rating || 0).toFixed(1)}</span>
             </div>
-            <div class="cart-item-info">
-                <h3 class="cart-item-name">${product.name}</h3>
-                <div class="cart-item-rating">
-                    <span class="stars">${generateStars(product.rating || 0)}</span>
-                    <span class="rating-value">${(product.rating || 0).toFixed(1)}</span>
-                </div>
-                <div class="cart-item-price">
-                    ${hasDiscount ? `
-                        <span class="old-price">${product.actual_price} ₽</span>
-                        <span class="current-price">${product.discount_price} ₽</span>
-                        <span class="discount">
-                            -${Math.round((1 - product.discount_price / product.actual_price) * 100)}%
-                        </span>
-                    ` : `
-                        <span class="current-price">${product.actual_price} ₽</span>
-                    `}
-                </div>
+            <div class="cart-item-price">
+                ${hasDiscount ? `
+                    <span class="old-price">${product.actual_price} ₽</span>
+                    <span class="current-price">${product.discount_price} ₽</span>
+                    <span class="discount-badge">-${discountPercent}%</span>
+                ` : `
+                    <span class="current-price">${product.actual_price} ₽</span>
+                `}
             </div>
-            <button class="btn-remove-from-cart" data-id="${product.id}">
-                <i class="fas fa-trash"></i> Удалить
-            </button>
+            <div class="cart-item-actions">
+                <button class="btn-remove" data-id="${product.id}">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </div>
         </div>
     `;
     
-    const removeBtn = item.querySelector('.btn-remove-from-cart');
-    removeBtn.addEventListener('click', async function() {
+    const removeBtn = item.querySelector('.btn-remove');
+    removeBtn.addEventListener('click', function() {
         const productId = this.dataset.id;
         removeFromCart(productId);
-        
         cartItems = cartItems.filter(item => item.id != productId);
         renderCartItems();
         updateTotalPrices();
@@ -126,21 +103,21 @@ function createCartItem(product) {
 
 function generateStars(rating) {
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.3 && rating % 1 < 0.8;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    const halfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
     
     let stars = '';
     
     for (let i = 0; i < fullStars; i++) {
-        stars += '<i class="fas fa-star"></i>';
+        stars += '★';
     }
     
-    if (hasHalfStar) {
-        stars += '<i class="fas fa-star-half-alt"></i>';
+    if (halfStar) {
+        stars += '☆';
     }
     
     for (let i = 0; i < emptyStars; i++) {
-        stars += '<i class="far fa-star"></i>';
+        stars += '☆';
     }
     
     return stars;
@@ -154,41 +131,28 @@ function updateTotalPrices() {
         return total + price;
     }, 0);
     
-    calculateDeliveryCost();
+    const deliveryDate = document.getElementById('delivery_date').value;
+    const deliveryInterval = document.getElementById('delivery_interval').value;
+    const deliveryCost = calculateDeliveryCost(deliveryDate, deliveryInterval);
     
-    document.getElementById('goods-total').textContent = `${goodsTotal} ₽`;
+    document.getElementById('products-total').textContent = `${goodsTotal} ₽`;
     document.getElementById('delivery-cost').textContent = `${deliveryCost} ₽`;
-    document.getElementById('total-cost').textContent = `${goodsTotal + deliveryCost} ₽`;
+    document.getElementById('order-total').textContent = `${goodsTotal + deliveryCost} ₽`;
 }
 
-
-function calculateDeliveryCost() {
-    const deliveryDateInput = document.getElementById('delivery_date');
-    const deliveryIntervalSelect = document.getElementById('delivery_interval');
+function setMinDeliveryDate() {
+    const deliveryDate = document.getElementById('delivery_date');
+    if (!deliveryDate) return;
     
-    if (!deliveryDateInput || !deliveryIntervalSelect) {
-        deliveryCost = 200; 
-        return;
-    }
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
     
-    const deliveryDate = new Date(deliveryDateInput.value);
-    const dayOfWeek = deliveryDate.getDay();
-    const interval = deliveryIntervalSelect.value;
-    
-    let cost = 200;
-    
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-        cost += 300;
-    }
-    
-    if (interval === '18:00-22:00' && dayOfWeek >= 1 && dayOfWeek <= 5) {
-        cost += 200;
-    }
-    
-    deliveryCost = cost;
+    deliveryDate.min = minDate;
+    deliveryDate.value = minDate;
 }
 
-function initEventListeners() {
+function setupEventListeners() {
     const deliveryDate = document.getElementById('delivery_date');
     const deliveryInterval = document.getElementById('delivery_interval');
     
@@ -202,17 +166,20 @@ function initEventListeners() {
     
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-            if (confirm('Вы уверены, что хотите сбросить все данные формы?')) {
-                document.getElementById('order-form').reset();
-                updateTotalPrices();
-            }
-        });
+        resetBtn.addEventListener('click', resetForm);
     }
     
     const orderForm = document.getElementById('order-form');
     if (orderForm) {
         orderForm.addEventListener('submit', submitOrder);
+    }
+}
+
+function resetForm() {
+    if (confirm('Вы уверены, что хотите сбросить все данные формы?')) {
+        document.getElementById('order-form').reset();
+        setMinDeliveryDate();
+        updateTotalPrices();
     }
 }
 
@@ -224,7 +191,13 @@ async function submitOrder(event) {
         return;
     }
     
-    const formData = new FormData(event.target);
+    const form = event.target;
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const formData = new FormData(form);
     const orderData = {
         full_name: formData.get('full_name'),
         email: formData.get('email'),
@@ -248,23 +221,22 @@ async function submitOrder(event) {
     try {
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Отправка...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
         
         const result = await createOrder(orderData);
         
-        showNotification('Заказ успешно оформлен!', 'success');
         clearCart();
         updateCartCounter();
+        
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
         
     } catch (error) {
         console.error('Ошибка оформления заказа:', error);
-        showNotification(`Ошибка: ${error.message}`, 'error');
         
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Оформить заказ';
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Оформить';
     }
 }

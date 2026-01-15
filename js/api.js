@@ -1,9 +1,9 @@
-
 const API_BASE_URL = 'https://edu.std-900.ist.mospolytech.ru/exam-2024-1/api';
-const API_KEY = '6a48b49a-943d-4bd4-868c-94a15212daff'; 
+const API_KEY = '6a48b49a-943d-4bd4-868c-94a15212daff';
 
 function showNotification(message, type = 'info') {
     const notificationArea = document.getElementById('notification-area');
+    if (!notificationArea) return;
     
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -16,7 +16,7 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-async function fetchGoods(page = 1, perPage = 10, sortOrder = null, filters = {}) {
+async function fetchGoods(page = 1, perPage = 12, sortOrder = null, filters = {}) {
     let url = `${API_BASE_URL}/goods?api_key=${API_KEY}&page=${page}&per_page=${perPage}`;
     
     if (sortOrder) {
@@ -27,11 +27,11 @@ async function fetchGoods(page = 1, perPage = 10, sortOrder = null, filters = {}
         url += `&main_category=${encodeURIComponent(filters.category)}`;
     }
     
-    if (filters.minPrice !== undefined) {
+    if (filters.minPrice) {
         url += `&min_price=${filters.minPrice}`;
     }
     
-    if (filters.maxPrice !== undefined) {
+    if (filters.maxPrice) {
         url += `&max_price=${filters.maxPrice}`;
     }
     
@@ -46,10 +46,12 @@ async function fetchGoods(page = 1, perPage = 10, sortOrder = null, filters = {}
     try {
         const response = await fetch(url);
         
+        if (response.status === 401) {
+            showNotification('Ошибка авторизации. Проверьте API ключ.', 'error');
+            throw new Error('Unauthorized');
+        }
+        
         if (!response.ok) {
-            if (response.status === 401) {
-                showNotification('Ошибка авторизации. Проверьте API ключ.', 'error');
-            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
@@ -66,6 +68,7 @@ async function fetchGoods(page = 1, perPage = 10, sortOrder = null, filters = {}
             goods: data,
             pagination: null
         };
+        
     } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
         showNotification('Ошибка загрузки товаров', 'error');
@@ -108,9 +111,13 @@ async function createOrder(orderData) {
             throw new Error(errorData.error || 'Ошибка создания заказа');
         }
         
-        return await response.json();
+        const result = await response.json();
+        showNotification('Заказ успешно оформлен!', 'success');
+        return result;
+        
     } catch (error) {
         console.error('Ошибка создания заказа:', error);
+        showNotification(`Ошибка: ${error.message}`, 'error');
         throw error;
     }
 }
@@ -132,9 +139,13 @@ async function updateOrder(orderId, orderData) {
             throw new Error(errorData.error || 'Ошибка обновления заказа');
         }
         
-        return await response.json();
+        const result = await response.json();
+        showNotification('Заказ успешно обновлен!', 'success');
+        return result;
+        
     } catch (error) {
         console.error('Ошибка обновления заказа:', error);
+        showNotification(`Ошибка: ${error.message}`, 'error');
         throw error;
     }
 }
@@ -152,9 +163,13 @@ async function deleteOrder(orderId) {
             throw new Error(errorData.error || 'Ошибка удаления заказа');
         }
         
-        return await response.json();
+        const result = await response.json();
+        showNotification('Заказ успешно удален!', 'success');
+        return result;
+        
     } catch (error) {
         console.error('Ошибка удаления заказа:', error);
+        showNotification(`Ошибка: ${error.message}`, 'error');
         throw error;
     }
 }
@@ -172,7 +187,6 @@ async function fetchProduct(productId) {
         return await response.json();
     } catch (error) {
         console.error('Ошибка загрузки товара:', error);
-        showNotification('Ошибка загрузки товара', 'error');
         return null;
     }
 }
@@ -180,22 +194,15 @@ async function fetchProduct(productId) {
 async function fetchCategories() {
     try {
         const data = await fetchGoods(1, 100);
-        const categories = new Set();
-        
-        data.goods.forEach(good => {
-            if (good.main_category) {
-                categories.add(good.main_category);
-            }
-        });
-        
-        return Array.from(categories).sort();
+        const categories = [...new Set(data.goods.map(good => good.main_category).filter(Boolean))];
+        return categories.sort();
     } catch (error) {
         console.error('Ошибка загрузки категорий:', error);
         return [];
     }
 }
 
-const CART_STORAGE_KEY = 'cart';
+const CART_STORAGE_KEY = 'shopzone_cart';
 
 function getCart() {
     const cart = localStorage.getItem(CART_STORAGE_KEY);
@@ -215,17 +222,17 @@ function addToCart(productId) {
         updateCartCounter();
         showNotification('Товар добавлен в корзину', 'success');
         return true;
+    } else {
+        showNotification('Товар уже в корзине', 'info');
+        return false;
     }
-    
-    return false;
 }
 
 function removeFromCart(productId) {
     let cart = getCart();
-    cart = cart.filter(id => id !== productId);
+    cart = cart.filter(id => id != productId);
     saveCart(cart);
     updateCartCounter();
-    showNotification('Товар удален из корзины', 'info');
 }
 
 function clearCart() {
@@ -238,22 +245,25 @@ function updateCartCounter() {
     if (cartCounter) {
         const cart = getCart();
         cartCounter.textContent = cart.length;
+        cartCounter.style.display = cart.length > 0 ? 'flex' : 'none';
     }
 }
 
-export {
-    showNotification,
-    fetchGoods,
-    fetchOrders,
-    createOrder,
-    updateOrder,
-    deleteOrder,
-    fetchProduct,
-    fetchCategories,
-    getCart,
-    saveCart,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    updateCartCounter
-};
+function calculateDeliveryCost(deliveryDate, deliveryInterval) {
+    let cost = 200;
+    
+    if (!deliveryDate || !deliveryInterval) return cost;
+    
+    const date = new Date(deliveryDate);
+    const dayOfWeek = date.getDay();
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+        cost += 300;
+    }
+    
+    if (deliveryInterval === '18:00-22:00' && dayOfWeek >= 1 && dayOfWeek <= 5) {
+        cost += 200;
+    }
+    
+    return cost;
+}

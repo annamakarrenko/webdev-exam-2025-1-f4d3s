@@ -3,11 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Корзина | Интернет-магазин</title>
+    <title>ShopZone | Корзина</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
+    <style>
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #ff6b6b;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .logo-icon {
+            font-size: 28px;
+            margin-right: 10px;
+            color: #ff6b6b;
+        }
+    </style>
 </head>
 <body>
     <div id="notification-area"></div>
@@ -16,65 +31,77 @@
         <div class="container">
             <div class="header-content">
                 <a href="index.html" class="logo">
-                    <i class="fas fa-store"></i>
-                    <span>Магазин</span>
+                    <i class="fas fa-shopping-bag logo-icon"></i>
+                    ShopZone
                 </a>
                 
                 <div class="header-icons">
-                    <a href="index.html" class="cart-icon">
+                    <a href="index.html" class="icon-link">
                         <i class="fas fa-home"></i>
-                        <span>Каталог</span>
+                        <span class="icon-text">Каталог</span>
                     </a>
-                    <a href="orders.html" class="user-icon">
+                    <a href="orders.html" class="icon-link">
                         <i class="fas fa-user"></i>
+                        <span class="icon-text">Кабинет</span>
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="container main-content">
+    <main class="container cart-layout">
         <section class="cart-section">
             <h2>Корзина</h2>
             
-            <div id="cart-items-container">
+            <div id="cart-items">
                 <div class="loading">Загрузка корзины...</div>
             </div>
+            
+            <div id="empty-cart" style="display: none;">
+                <div class="empty-cart-message">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Корзина пуста</h3>
+                    <p>Перейдите в каталог, чтобы добавить товары.</p>
+                    <a href="index.html" class="btn btn-primary">Вернуться в каталог</a>
+                </div>
+            </div>
         </section>
-        
+
         <section class="order-form-section">
             <h2>Оформление заказа</h2>
             
             <form id="order-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="full_name">Имя</label>
-                        <input type="text" id="full_name" name="full_name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="phone">Телефон</label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
+                <div class="form-group">
+                    <label for="full_name">Имя</label>
+                    <input type="text" id="full_name" name="full_name" placeholder="Иванов Иван" required>
                 </div>
                 
                 <div class="form-group">
-                    <label class="checkbox">
+                    <label for="phone">Номер телефона</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+74952230523" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="example@mospolytech.ru" required>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
                         <input type="checkbox" id="subscribe" name="subscribe">
+                        <span class="checkmark"></span>
                         Подписаться на рассылку
                     </label>
                 </div>
                 
                 <div class="form-group">
+                    <label for="comment">Комментарий к заказу</label>
+                    <textarea id="comment" name="comment" rows="4" placeholder="Ваши пожелания..."></textarea>
+                </div>
+                
+                <div class="form-group">
                     <label for="delivery_address">Адрес доставки</label>
-                    <input type="text" id="delivery_address" name="delivery_address" required>
+                    <input type="text" id="delivery_address" name="delivery_address" placeholder="ул. Большая Семёновская, 38" required>
                 </div>
                 
                 <div class="form-row">
@@ -84,9 +111,9 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="delivery_interval">Временной интервал доставки</label>
+                        <label for="delivery_interval">Время доставки</label>
                         <select id="delivery_interval" name="delivery_interval" required>
-                            <option value="">Выберите интервал</option>
+                            <option value="">Выберите время</option>
                             <option value="08:00-12:00">08:00 - 12:00</option>
                             <option value="12:00-14:00">12:00 - 14:00</option>
                             <option value="14:00-18:00">14:00 - 18:00</option>
@@ -95,29 +122,28 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="comment">Комментарий к заказу</label>
-                    <textarea id="comment" name="comment" rows="4"></textarea>
-                </div>
-                
                 <div class="order-summary">
-                    <div class="summary-row">
-                        <span>Стоимость товаров:</span>
-                        <span id="goods-total">0 ₽</span>
+                    <div class="summary-item">
+                        <span>Товары:</span>
+                        <span id="products-total">0 ₽</span>
                     </div>
-                    <div class="summary-row">
-                        <span>Стоимость доставки:</span>
-                        <span id="delivery-cost">0 ₽</span>
+                    <div class="summary-item">
+                        <span>Доставка:</span>
+                        <span id="delivery-cost">500 ₽</span>
                     </div>
-                    <div class="summary-row total">
-                        <strong>Итоговая стоимость:</strong>
-                        <strong id="total-cost">0 ₽</strong>
+                    <div class="summary-item total">
+                        <strong>Итого:</strong>
+                        <strong id="order-total">500 ₽</strong>
                     </div>
                 </div>
                 
                 <div class="form-actions">
-                    <button type="button" id="reset-btn" class="btn btn-secondary">Сбросить</button>
-                    <button type="submit" id="submit-btn" class="btn btn-primary">Оформить заказ</button>
+                    <button type="button" id="reset-btn" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Сбросить
+                    </button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Оформить
+                    </button>
                 </div>
             </form>
         </section>
@@ -126,12 +152,20 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <p>&copy; 2025 Название компании</p>
-                <p>Телефон: +7 (495) 123-45-67 | Email: info@store.ru</p>
+                <div class="footer-logo">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>ShopZone</span>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2025 ShopZone. Все права защищены.</p>
+                    <p>Телефон: +7 (495) 123-45-67</p>
+                    <p>Email: info@shopzone.ru</p>
+                </div>
             </div>
         </div>
     </footer>
 
-    <script type="module" src="js/cart.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/cart.js"></script>
 </body>
 </html>
