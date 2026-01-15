@@ -192,8 +192,14 @@ async function fetchProduct(productId) {
 }
 
 async function fetchCategories() {
-    const categories = [...new Set(phonesData.map(phone => phone.sub_category))];
-    return ['all', ...categories.sort()];
+    try {
+        const data = await fetchGoods(1, 100);
+        const categories = [...new Set(data.goods.map(good => good.main_category).filter(Boolean))];
+        return categories.sort();
+    } catch (error) {
+        console.error('Ошибка загрузки категорий:', error);
+        return [];
+    }
 }
 
 const CART_STORAGE_KEY = 'shopzone_cart';

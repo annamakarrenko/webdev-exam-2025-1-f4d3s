@@ -1,666 +1,408 @@
-const API_KEY = '6a48b49a-943d-4bd4-868c-94a15212daff';
-const API_URL = 'https://edu.std-900.ist.mospolytech.ru/labs/api';
-let allDishes = [];
 let allOrders = [];
+let allProducts = {};
 
-function showModal(modalId) {
-    const modal = document.getElementById(modalId);
-    const overlay = document.getElementById('modal-overlay');
-    modal.style.display = 'block';
-    overlay.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-
-function hideModal(modalId) {
-    const modal = document.getElementById(modalId);
-    const overlay = document.getElementById('modal-overlay');
-    modal.style.display = 'none';
-    overlay.style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-async function loadDishes() {
-    try {
-        const response = await fetch(`${API_URL}/dishes?api_key=${API_KEY}`);
-        if (!response.ok) throw new Error('Ошибка загрузки блюд');
-        allDishes = await response.json();
-        return allDishes;
-    } catch (error) {
-        showNotification('Ошибка загрузки блюд', 'error');
-        return [];
-    }
-}
+document.addEventListener('DOMContentLoaded', async function() {
+    updateCartCounter();
+    await loadOrders();
+});
 
 async function loadOrders() {
+    const ordersContainer = document.getElementById('orders-container');
+    if (!ordersContainer) return;
+    
+    ordersContainer.innerHTML = '<div class="loading">Загрузка заказов...</div>';
+    
     try {
-        const response = await fetch(`${API_URL}/orders?api_key=${API_KEY}`);
-        if (!response.ok) throw new Error('Ошибка загрузки заказов');
-        allOrders = await response.json();
-        return allOrders;
+        allOrders = await fetchOrders();
+        
+        if (allOrders.length === 0) {
+            ordersContainer.innerHTML = '<div class="no-orders">У вас пока нет заказов.</div>';
+            return;
+        }
+        
+        await loadProductsInfo();
+        renderOrders();
+        
     } catch (error) {
-        showNotification('Ошибка загрузки заказов', 'error');
-        return [];
+        console.error('Ошибка загрузки заказов:', error);
+        ordersContainer.innerHTML = '<div class="error">Ошибка загрузки заказов</div>';
     }
 }
 
-function getDishName(dishId) {
-    const dish = allDishes.find(d => d.id == dishId);
-    return dish ? dish.name : 'Неизвестное блюдо';
+async function loadProductsInfo() {
+    const productIds = new Set();
+    allOrders.forEach(order => {
+        if (order.good_ids) {
+            order.good_ids.forEach(id => productIds.add(id));
+        }
+    });
+    
+    for (const productId of productIds) {
+        if (!allProducts[productId]) {
+            const product = await fetchProduct(productId);
+            if (product) {
+                allProducts[productId] = product;
+            }
+        }
+    }
 }
 
-function formatDateTime(dateTimeStr) {
-    const date = new Date(dateTimeStr);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-}
-
-function formatDeliveryTime(order) {
-    if (order.delivery_type === 'by_time' && order.delivery_time) {
-        const time = order.delivery_time;
-        return time.substring(0, 5);
-    }
-    
-    return 'Как можно скорее';
-}
-
-function getOrderComposition(order) {
-    const parts = [];
-    if (order.soup_id) parts.push(getDishName(order.soup_id));
-    if (order.main_course_id) parts.push(getDishName(order.main_course_id));
-    if (order.salad_id) parts.push(getDishName(order.salad_id));
-    if (order.drink_id) parts.push(getDishName(order.drink_id));
-    if (order.dessert_id) parts.push(getDishName(order.dessert_id));
-    return parts.join(', ');
-}
-
-function calculateOrderTotal(order) {
-    let total = 0;
-    
-    if (order.soup_id) {
-        const soupDish = allDishes.find(d => d.id == order.soup_id);
-        total += soupDish?.price || 0;
-    }
-    
-    if (order.main_course_id) {
-        const mainDish = allDishes.find(d => d.id == order.main_course_id);
-        total += mainDish?.price || 0;
-    }
-    
-    if (order.salad_id) {
-        const saladDish = allDishes.find(d => d.id == order.salad_id);
-        total += saladDish?.price || 0;
-    }
-    
-    if (order.drink_id) {
-        const drinkDish = allDishes.find(d => d.id == order.drink_id);
-        total += drinkDish?.price || 0;
-    }
-    
-    if (order.dessert_id) {
-        const dessertDish = allDishes.find(d => d.id == order.dessert_id);
-        total += dessertDish?.price || 0;
-    }
-    
-    return total;
-}
-
-function renderOrdersTable() {
-    const container = document.getElementById('orders-list');
-    
-    if (allOrders.length === 0) {
-        container.innerHTML = '<p>У вас пока нет заказов.</p>';
-        return;
-    }
+function renderOrders() {
+    const ordersContainer = document.getElementById('orders-container');
+    if (!ordersContainer) return;
     
     const sortedOrders = [...allOrders].sort((a, b) => 
         new Date(b.created_at) - new Date(a.created_at)
     );
     
     let html = `
-        <table class="orders-table">
-            <thead>
-                <tr>
-                    <th>№</th>
-                    <th>Дата оформления</th>
-                    <th>Состав заказа</th>
-                    <th>Стоимость</th>
-                    <th>Время доставки</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="orders-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Дата оформления</th>
+                        <th>Состав заказа</th>
+                        <th>Стоимость</th>
+                        <th>Доставка</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
     `;
     
     sortedOrders.forEach((order, index) => {
-        const total = calculateOrderTotal(order);
-        const composition = getOrderComposition(order);
-        const deliveryTime = formatDeliveryTime(order);
         const orderDate = formatDateTime(order.created_at);
+        const composition = getOrderComposition(order);
+        const total = calculateOrderTotal(order);
+        const deliveryInfo = formatDeliveryInfo(order);
         
         html += `
             <tr data-order-id="${order.id}">
-                <td class="order-number">${index + 1}</td>
-                <td class="order-date">${orderDate}</td>
-                <td class="order-composition">${composition}</td>
-                <td class="order-price">${total} руб.</td>
-                <td class="order-delivery-time"><div>${deliveryTime}</div></td>
-                <td class="actions-cell">
-                    <button class="action-icon-btn view-icon" 
-                        onclick="viewOrder(${order.id})" 
-                        title="Подробнее">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="action-icon-btn edit-icon" 
-                        onclick="editOrder(${order.id})" 
-                        title="Редактировать">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="action-icon-btn delete-icon" 
-                        onclick="confirmDelete(${order.id})" 
-                        title="Удалить">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                <td>${index + 1}</td>
+                <td>${orderDate}</td>
+                <td title="${composition}">${truncateText(composition, 50)}</td>
+                <td>${total} ₽</td>
+                <td>${deliveryInfo}</td>
+                <td>
+                    <div class="actions">
+                        <button class="action-btn btn-view" onclick="viewOrder(${order.id})" title="Просмотр">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn btn-edit" onclick="editOrder(${order.id})" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteOrderConfirm(${order.id})" title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
     });
     
     html += `
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     `;
     
-    container.innerHTML = html;
+    ordersContainer.innerHTML = html;
 }
 
-async function updateOrder(orderId, formData) {
-    const updateData = {
-        full_name: formData.get('full_name'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        delivery_address: formData.get('delivery_address'),
-        delivery_type: formData.get('delivery_type')
-    };
-    
-    const comment = formData.get('comment');
-    if (comment) updateData.comment = comment;
-    
-    if (updateData.delivery_type === 'by_time') {
-        const deliveryTime = formData.get('delivery_time');
-        if (!deliveryTime) {
-            showNotification('Укажите время доставки', 'error');
-            return;
-        }
-        updateData.delivery_time = deliveryTime;
-    }
-    
-    try {
-        const url = `${API_URL}/orders/${orderId}?api_key=${API_KEY}`;
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updateData)
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Ошибка обновления заказа');
-        }
-        
-        const updatedOrder = await response.json();
-        
-        const index = allOrders.findIndex(o => o.id == orderId);
-        if (index !== -1) {
-            allOrders[index] = updatedOrder;
-        }
-        
-        showNotification('Заказ успешно изменён');
-        hideModal('edit-modal');
-        renderOrdersTable();
-        
-    } catch (error) {
-        const errorMessage = 'Ошибка при обновлении заказа: ' + error.message;
-        showNotification(errorMessage, 'error');
-    }
+function formatDateTime(dateTimeStr) {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
 }
 
-async function deleteOrder(orderId) {
-    try {
-        const url = `${API_URL}/orders/${orderId}?api_key=${API_KEY}`;
-        const response = await fetch(url, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Ошибка удаления заказа');
-        }
-        
-        allOrders = allOrders.filter(o => o.id != orderId);
-        
-        showNotification('Заказ успешно удалён');
-        hideModal('delete-modal');
-        renderOrdersTable();
-        
-    } catch (error) {
-        const errorMessage = 'Ошибка при удалении заказа: ' + error.message;
-        showNotification(errorMessage, 'error');
-    }
+function getOrderComposition(order) {
+    if (!order.good_ids || order.good_ids.length === 0) return 'Нет товаров';
+    
+    const productNames = order.good_ids
+        .map(id => allProducts[id]?.name || `Товар #${id}`)
+        .filter(Boolean);
+    
+    return productNames.join(', ');
 }
 
-function viewOrder(orderId) {
+function calculateOrderTotal(order) {
+    if (!order.good_ids || order.good_ids.length === 0) return 0;
+    
+    return order.good_ids.reduce((total, productId) => {
+        const product = allProducts[productId];
+        if (!product) return total;
+        
+        const price = product.discount_price && product.discount_price < product.actual_price
+            ? product.discount_price
+            : product.actual_price;
+        
+        return total + (price || 0);
+    }, 0);
+}
+
+function formatDeliveryInfo(order) {
+    if (!order.delivery_date || !order.delivery_interval) return 'Не указано';
+    
+    return `${order.delivery_date} ${order.delivery_interval}`;
+}
+
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+window.viewOrder = async function(orderId) {
     const order = allOrders.find(o => o.id == orderId);
     if (!order) return;
+    
+    const modalContent = document.getElementById('view-modal-content');
+    if (!modalContent) return;
     
     const total = calculateOrderTotal(order);
-    const orderDate = formatDateTime(order.created_at);
-    const deliveryTime = formatDeliveryTime(order);
+    const composition = getOrderComposition(order);
     
-    let html = `
-        <h3>Просмотр заказа</h3>
-        <div class="info-divider"></div>
-        
-        <div class="order-info-section">
-            <div class="info-row">
-                <div class="info-label">Дата оформления:</div>
-                <div class="info-value">${orderDate}</div>
+    modalContent.innerHTML = `
+        <div class="order-details">
+            <div class="detail-item">
+                <strong>Дата оформления:</strong>
+                <span>${formatDateTime(order.created_at)}</span>
             </div>
-        </div>
-        
-        <div class="section-title">Доставка</div>
-        <div class="order-info-section">
-            <div class="info-row">
-                <div class="info-label">Имя получателя:</div>
-                <div class="info-value">${order.full_name}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Адрес доставки:</div>
-                <div class="info-value">${order.delivery_address}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Время доставки:</div>
-                <div class="info-value">${deliveryTime}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Телефон:</div>
-                <div class="info-value">${order.phone}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Email:</div>
-                <div class="info-value">${order.email}</div>
-            </div>
-        </div>
-    `;
-    
-    if (order.comment) {
-        html += `
-            <div class="divider"></div>
             
-            <div class="section-title">Комментарий</div>
-            <div class="order-info-section">
-                <div class="comment-text">${order.comment}</div>
+            <div class="detail-item">
+                <strong>Имя:</strong>
+                <span>${order.full_name || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    html += `
-        <div class="divider"></div>
-        
-        <div class="section-title">Состав заказа</div>
-        <div class="order-info-section">
-    `;
-    
-    if (order.soup_id) {
-        const dishName = getDishName(order.soup_id);
-        const soupDish = allDishes.find(d => d.id == order.soup_id);
-        const dishPrice = soupDish?.price || 0;
-        
-        html += `
-            <div class="info-row">
-                <div class="info-label">Суп:</div>
-                <div class="info-value">${dishName} (${dishPrice} руб.)</div>
+            
+            <div class="detail-item">
+                <strong>Телефон:</strong>
+                <span>${order.phone || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    if (order.main_course_id) {
-        const dishName = getDishName(order.main_course_id);
-        const mainDish = allDishes.find(d => d.id == order.main_course_id);
-        const dishPrice = mainDish?.price || 0;
-        
-        html += `
-            <div class="info-row">
-                <div class="info-label">Основное блюдо:</div>
-                <div class="info-value">${dishName} (${dishPrice} руб.)</div>
+            
+            <div class="detail-item">
+                <strong>Email:</strong>
+                <span>${order.email || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    if (order.salad_id) {
-        const dishName = getDishName(order.salad_id);
-        const saladDish = allDishes.find(d => d.id == order.salad_id);
-        const dishPrice = saladDish?.price || 0;
-        
-        html += `
-            <div class="info-row">
-                <div class="info-label">Салат:</div>
-                <div class="info-value">${dishName} (${dishPrice} руб.)</div>
+            
+            <div class="detail-item">
+                <strong>Адрес доставки:</strong>
+                <span>${order.delivery_address || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    if (order.drink_id) {
-        const dishName = getDishName(order.drink_id);
-        const drinkDish = allDishes.find(d => d.id == order.drink_id);
-        const dishPrice = drinkDish?.price || 0;
-        
-        html += `
-            <div class="info-row">
-                <div class="info-label">Напиток:</div>
-                <div class="info-value">${dishName} (${dishPrice} руб.)</div>
+            
+            <div class="detail-item">
+                <strong>Дата доставки:</strong>
+                <span>${order.delivery_date || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    if (order.dessert_id) {
-        const dishName = getDishName(order.dessert_id);
-        const dessertDish = allDishes.find(d => d.id == order.dessert_id);
-        const dishPrice = dessertDish?.price || 0;
-        
-        html += `
-            <div class="info-row">
-                <div class="info-label">Десерт:</div>
-                <div class="info-value">${dishName} (${dishPrice} руб.)</div>
+            
+            <div class="detail-item">
+                <strong>Время доставки:</strong>
+                <span>${order.delivery_interval || 'Не указано'}</span>
             </div>
-        `;
-    }
-    
-    html += `
+            
+            <div class="detail-item">
+                <strong>Состав заказа:</strong>
+                <div class="composition-list">${composition}</div>
+            </div>
+            
+            ${order.comment ? `
+            <div class="detail-item">
+                <strong>Комментарий:</strong>
+                <div class="comment">${order.comment}</div>
+            </div>
+            ` : ''}
+            
+            <div class="detail-item total">
+                <strong>Стоимость:</strong>
+                <span class="price">${total} ₽</span>
+            </div>
         </div>
-
-        <div class="info-row">
-            <div class="section-title">Стоимость: ${total} руб.</div>
-        </div>
-        <div class="info-divider"></div>
-        <div class="modal-buttons-right">
-            <button class="action-btn ok-btn" onclick="hideModal('view-modal')">ОК</button>
+        
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="closeModal('view-modal')">Закрыть</button>
         </div>
     `;
-    
-    document.getElementById('view-modal-content').innerHTML = html;
-    
-    const modal = document.getElementById('view-modal');
-    modal.style.overflowY = 'visible';
-    modal.style.maxHeight = 'none';
     
     showModal('view-modal');
-}
+};
 
-function editOrder(orderId) {
+window.editOrder = async function(orderId) {
     const order = allOrders.find(o => o.id == orderId);
     if (!order) return;
     
-    const isByTime = order.delivery_type === 'by_time';
-    const totalPrice = calculateOrderTotal(order);
-    const orderDate = formatDateTime(order.created_at);
+    const modalContent = document.getElementById('edit-modal-content');
+    if (!modalContent) return;
     
-    const nowChecked = order.delivery_type === 'now' ? 'checked' : '';
-    const byTimeChecked = order.delivery_type === 'by_time' ? 'checked' : '';
+    const total = calculateOrderTotal(order);
     
-    let html = `
-        <h3>Редактирование заказа</h3>
-        <div class="info-divider"></div>
-        
-        <div class="order-info-section">
-            <div class="info-row">
-                <div class="info-label">Дата оформления:</div>
-                <div class="info-value">${orderDate}</div>
+    modalContent.innerHTML = `
+        <form id="edit-order-form" data-order-id="${order.id}">
+            <div class="form-group">
+                <label for="edit-full_name">Имя</label>
+                <input type="text" id="edit-full_name" name="full_name" 
+                       value="${order.full_name || ''}" required>
             </div>
-        </div>
-        
-        <form id="edit-order-form" class="edit-form">
-            <input type="hidden" name="id" value="${order.id}">
             
-            <div class="section-title">Доставка</div>
-            <div class="edit-form-section">
-                <div class="edit-row">
-                    <div class="edit-label">Имя получателя:</div>
-                    <div class="edit-input">
-                        <input type="text" name="full_name" value="${order.full_name}" required>
-                    </div>
-                </div>
-                
-                <div class="edit-row">
-                    <div class="edit-label">Адрес доставки:</div>
-                    <div class="edit-input">
-                        <input type="text" name="delivery_address" value="${order.delivery_address}" required>
-                    </div>
-                </div>
-                
-                <div class="edit-row">
-                    <div class="edit-label">Тип доставки:</div>
-                    <div class="edit-input">
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="delivery_type" value="now" ${nowChecked}>
-                                Как можно скорее
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="delivery_type" value="by_time" ${byTimeChecked}>
-                                Ко времени
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="edit-row" id="delivery-time-row" style="${isByTime ? '' : 'display: none;'}">
-                    <div class="edit-label">Время доставки:</div>
-                    <div class="edit-input">
-                        <input type="time" name="delivery_time" value="${order.delivery_time || ''}" min="07:00" max="23:00" step="300">
-                        <small>Доступное время с 7:00 до 23:00</small>
-                    </div>
-                </div>
-                
-                <div class="edit-row">
-                    <div class="edit-label">Телефон:</div>
-                    <div class="edit-input">
-                        <input type="tel" name="phone" value="${order.phone}" required>
-                    </div>
-                </div>
-                
-                <div class="edit-row">
-                    <div class="edit-label">Email:</div>
-                    <div class="edit-input">
-                        <input type="email" name="email" value="${order.email}" required>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label for="edit-phone">Телефон</label>
+                <input type="tel" id="edit-phone" name="phone" 
+                       value="${order.phone || ''}" required>
             </div>
-
-            <div class="section-title">Комментарий</div>
-            <div class="edit-form-section">
-                <div class="edit-row">
-                    <div class="edit-input">
-                        <textarea name="comment">${order.comment || ''}</textarea>
-                    </div>
+            
+            <div class="form-group">
+                <label for="edit-email">Email</label>
+                <input type="email" id="edit-email" name="email" 
+                       value="${order.email || ''}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-delivery_address">Адрес доставки</label>
+                <input type="text" id="edit-delivery_address" name="delivery_address" 
+                       value="${order.delivery_address || ''}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-delivery_date">Дата доставки</label>
+                <input type="date" id="edit-delivery_date" name="delivery_date" 
+                       value="${formatDateForInput(order.delivery_date)}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-delivery_interval">Время доставки</label>
+                <select id="edit-delivery_interval" name="delivery_interval" required>
+                    <option value="">Выберите время</option>
+                    <option value="08:00-12:00" ${order.delivery_interval === '08:00-12:00' ? 'selected' : ''}>08:00 - 12:00</option>
+                    <option value="12:00-14:00" ${order.delivery_interval === '12:00-14:00' ? 'selected' : ''}>12:00 - 14:00</option>
+                    <option value="14:00-18:00" ${order.delivery_interval === '14:00-18:00' ? 'selected' : ''}>14:00 - 18:00</option>
+                    <option value="18:00-22:00" ${order.delivery_interval === '18:00-22:00' ? 'selected' : ''}>18:00 - 22:00</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-comment">Комментарий</label>
+                <textarea id="edit-comment" name="comment" rows="4">${order.comment || ''}</textarea>
+            </div>
+            
+            <div class="order-summary">
+                <div class="summary-item total">
+                    <strong>Стоимость заказа:</strong>
+                    <strong class="price">${total} ₽</strong>
                 </div>
             </div>
             
-            <div class="section-title">Состав заказа</div>
-    `;
-
-    if (order.soup_id) {
-        const dishName = getDishName(order.soup_id);
-        const soupDish = allDishes.find(d => d.id == order.soup_id);
-        const dishPrice = soupDish?.price || 0;
-        
-        html += `
-            <div class="order-summary-row">
-                <div class="order-summary-label">Суп:</div>
-                <div class="order-summary-value">${dishName} (${dishPrice} руб.)</div>
-            </div>
-        `;
-    }
-    
-    if (order.main_course_id) {
-        const dishName = getDishName(order.main_course_id);
-        const mainDish = allDishes.find(d => d.id == order.main_course_id);
-        const dishPrice = mainDish?.price || 0;
-        
-        html += `
-            <div class="order-summary-row">
-                <div class="order-summary-label">Основное блюдо:</div>
-                <div class="order-summary-value">${dishName} (${dishPrice} руб.)</div>
-            </div>
-        `;
-    }
-    
-    if (order.salad_id) {
-        const dishName = getDishName(order.salad_id);
-        const saladDish = allDishes.find(d => d.id == order.salad_id);
-        const dishPrice = saladDish?.price || 0;
-        
-        html += `
-            <div class="order-summary-row">
-                <div class="order-summary-label">Салат:</div>
-                <div class="order-summary-value">${dishName} (${dishPrice} руб.)</div>
-            </div>
-        `;
-    }
-    
-    if (order.drink_id) {
-        const dishName = getDishName(order.drink_id);
-        const drinkDish = allDishes.find(d => d.id == order.drink_id);
-        const dishPrice = drinkDish?.price || 0;
-        
-        html += `
-            <div class="order-summary-row">
-                <div class="order-summary-label">Напиток:</div>
-                <div class="order-summary-value">${dishName} (${dishPrice} руб.)</div>
-            </div>
-        `;
-    }
-    
-    if (order.dessert_id) {
-        const dishName = getDishName(order.dessert_id);
-        const dessertDish = allDishes.find(d => d.id == order.dessert_id);
-        const dishPrice = dessertDish?.price || 0;
-        
-        html += `
-            <div class="order-summary-row">
-                <div class="order-summary-label">Десерт:</div>
-                <div class="order-summary-value">${dishName} (${dishPrice} руб.)</div>
-            </div>
-        `;
-    }
-
-    html += `
-                <div class="order-summary-row order-total-row">
-                    <div class="order-summary-label">Стоимость:</div>
-                    <div class="order-summary-value">${totalPrice} руб.</div>
-                </div>
-            
-            <div class="info-divider"></div>
-            
-            <div class="modal-buttons-right">
-                <button type="button" class="action-btn cancel-btn" onclick="hideModal('edit-modal')">Отмена</button>
-                <button type="submit" class="action-btn save-btn">Сохранить</button>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('edit-modal')">Отмена</button>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
             </div>
         </form>
     `;
     
-    document.getElementById('edit-modal-content').innerHTML = html;
-    
-    const deliveryTypeRadios = document.querySelectorAll('input[name="delivery_type"]');
-    deliveryTypeRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            const deliveryTimeRow = document.getElementById('delivery-time-row');
-            if (this.value === 'by_time') {
-                deliveryTimeRow.style.display = 'flex';
-            } else {
-                deliveryTimeRow.style.display = 'none';
-            }
-        });
-    });
+    const deliveryDateInput = document.getElementById('edit-delivery_date');
+    if (deliveryDateInput) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        deliveryDateInput.min = tomorrow.toISOString().split('T')[0];
+    }
     
     const form = document.getElementById('edit-order-form');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        await updateOrder(orderId, new FormData(form));
+        await updateOrderHandler(orderId);
     });
     
     showModal('edit-modal');
+};
+
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    
+    if (dateStr.includes('.')) {
+        const [day, month, year] = dateStr.split('.');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    return dateStr;
 }
 
-function confirmDelete(orderId) {
-    const order = allOrders.find(o => o.id == orderId);
-    if (!order) return;
+async function updateOrderHandler(orderId) {
+    const form = document.getElementById('edit-order-form');
+    const formData = new FormData(form);
     
-    const orderDate = formatDateTime(order.created_at);
+    const orderData = {
+        full_name: formData.get('full_name'),
+        phone: formData.get('phone'),
+        email: formData.get('email'),
+        delivery_address: formData.get('delivery_address'),
+        delivery_date: formData.get('delivery_date'),
+        delivery_interval: formData.get('delivery_interval'),
+        comment: formData.get('comment')
+    };
     
-    let html = `
-        <h3>Удаление заказа</h3>
-        <div class="info-divider"></div>
+    if (orderData.delivery_date) {
+        const date = new Date(orderData.delivery_date);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        orderData.delivery_date = `${day}.${month}.${year}`;
+    }
+    
+    try {
+        const result = await updateOrder(orderId, orderData);
         
-        <div class="order-info-section">
-            <div class="info-row">
-                <div class="info-label">Дата оформления:</div>
-                <div class="info-value">${orderDate}</div>
+        const index = allOrders.findIndex(o => o.id == orderId);
+        if (index !== -1) {
+            allOrders[index] = { ...allOrders[index], ...result };
+        }
+        
+        renderOrders();
+        closeModal('edit-modal');
+        
+    } catch (error) {
+        console.error('Ошибка обновления заказа:', error);
+    }
+}
+
+window.deleteOrderConfirm = function(orderId) {
+    const modalContent = document.getElementById('delete-modal-content');
+    if (!modalContent) return;
+    
+    modalContent.innerHTML = `
+        <div class="delete-confirmation">
+            <p>Вы уверены, что хотите удалить этот заказ?</p>
+            <p class="warning">Это действие нельзя отменить.</p>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('delete-modal')">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="deleteOrderHandler(${orderId})">Удалить</button>
             </div>
-        </div>
-        
-        <p style="margin: 20px 0; font-size: 16px;">Вы уверены, что хотите удалить этот заказ?</p>
-        
-        <div class="info-divider"></div>
-        <div class="modal-buttons-split">
-            <button type="button" class="action-btn no-btn" onclick="hideModal('delete-modal')">Нет</button>
-            <button type="button" class="action-btn yes-btn" onclick="deleteOrder(${order.id})">Да</button>
         </div>
     `;
     
-    document.getElementById('delete-modal-content').innerHTML = html;
     showModal('delete-modal');
-}
+};
 
-function initModalListeners() {
-    document.querySelectorAll('.close-modal').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            hideModal(modal.id);
-        });
-    });
-    
-    const overlay = document.getElementById('modal-overlay');
-    overlay.addEventListener('click', function() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            hideModal(modal.id);
-        });
-    });
-}
+window.deleteOrderHandler = async function(orderId) {
+    try {
+        await deleteOrder(orderId);
+        
+        allOrders = allOrders.filter(o => o.id != orderId);
+        renderOrders();
+        closeModal('delete-modal');
+        
+    } catch (error) {
+        console.error('Ошибка удаления заказа:', error);
+    }
+};
 
-async function initOrdersPage() {
-    await loadDishes();
-    await loadOrders();
-    renderOrdersTable();
-    initModalListeners();
-}
+window.showModal = function(modalId) {
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById(modalId).style.display = 'block';
+    document.body.style.overflow = 'hidden';
+};
 
-document.addEventListener('DOMContentLoaded', initOrdersPage);
+window.closeModal = function(modalId) {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
