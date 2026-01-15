@@ -3,153 +3,17 @@ let currentSort = '';
 let currentFilters = {};
 let totalPages = 1;
 let isLoading = false;
-let allCategories = [];
+let allCategories = ['apple', 'samsung', 'xiaomi', 'google', 'huawei', 'other'];
 
-async function fetchAllGoods(page = 1, perPage = 12, sortOrder = null, filters = {}) {
-    try {
-        const searchQuery = filters.query ? filters.query.toLowerCase() : '';
-        const isPhoneSearch = searchQuery.includes('телефон') ||
-            searchQuery.includes('phone') ||
-            searchQuery.includes('iphone') ||
-            searchQuery.includes('samsung') ||
-            searchQuery.includes('xiaomi') ||
-            searchQuery.includes('huawei') ||
-            searchQuery.includes('google') ||
-            searchQuery.includes('pixel') ||
-            searchQuery.includes('motorola') ||
-            searchQuery.includes('oneplus') ||
-            searchQuery.includes('nothing');
-        
-        if (filters.category === 'smartphones' || isPhoneSearch) {
-            let filteredPhones = [...phonesData];
-            
-            if (filters.query) {
-                const query = filters.query.toLowerCase();
-                filteredPhones = filteredPhones.filter(phone => 
-                    phone.name.toLowerCase().includes(query) ||
-                    (phone.brand && phone.brand.toLowerCase().includes(query)) ||
-                    phone.main_category.toLowerCase().includes(query) ||
-                    phone.sub_category.toLowerCase().includes(query) ||
-                    (phone.color && phone.color.toLowerCase().includes(query)) ||
-                    (phone.os && phone.os.toLowerCase().includes(query))
-                );
-            }
-            
-            if (filters.category === 'smartphones') {
-                filteredPhones = filteredPhones.filter(phone => 
-                    phone.main_category === 'smartphones'
-                );
-            }
-            
-            if (filters.minPrice) {
-                filteredPhones = filteredPhones.filter(phone => {
-                    const price = phone.discount_price || phone.actual_price;
-                    return price >= filters.minPrice;
-                });
-            }
-            
-            if (filters.maxPrice) {
-                filteredPhones = filteredPhones.filter(phone => {
-                    const price = phone.discount_price || phone.actual_price;
-                    return price <= filters.maxPrice;
-                });
-            }
-            
-            if (filters.discountOnly) {
-                filteredPhones = filteredPhones.filter(phone => 
-                    phone.discount_price && phone.discount_price < phone.actual_price
-                );
-            }
-            
-            if (sortOrder) {
-                filteredPhones.sort((a, b) => {
-                    const priceA = a.discount_price || a.actual_price;
-                    const priceB = b.discount_price || b.actual_price;
-                    
-                    switch(sortOrder) {
-                        case 'rating_desc':
-                            return b.rating - a.rating;
-                        case 'rating_asc':
-                            return a.rating - b.rating;
-                        case 'price_desc':
-                            return priceB - priceA;
-                        case 'price_asc':
-                            return priceA - priceB;
-                        default:
-                            return 0;
-                    }
-                });
-            }
-            
-            const totalCount = filteredPhones.length;
-            const startIndex = (page - 1) * perPage;
-            const endIndex = startIndex + perPage;
-            const paginatedPhones = filteredPhones.slice(startIndex, endIndex);
-            
-            return {
-                goods: paginatedPhones,
-                pagination: {
-                    current_page: page,
-                    per_page: perPage,
-                    total_count: totalCount
-                }
-            };
-        }
-        
-        return await fetchGoods(page, perPage, sortOrder, filters);
-        
-    } catch (error) {
-        console.error('Ошибка при загрузке товаров:', error);
-        
-        if (filters.category === 'smartphones' || 
-            (filters.query && filters.query.toLowerCase().includes('телефон'))) {
-            
-            let filteredPhones = phonesData.slice(0, 12);
-            
-            if (filters.category === 'smartphones') {
-                filteredPhones = phonesData.filter(phone => 
-                    phone.main_category === 'smartphones'
-                ).slice(0, 12);
-            }
-            
-            return {
-                goods: filteredPhones,
-                pagination: {
-                    current_page: 1,
-                    per_page: 12,
-                    total_count: phonesData.length
-                }
-            };
-        }
-        
-        return { goods: [], pagination: null };
-    }
-}
+document.addEventListener('DOMContentLoaded', async function() {
+    updateCartCounter();
+    loadCategories();
+    await loadProducts();
+    setupEventListeners();
+    loadSavedFilters();
+});
 
-async function loadCategories() {
-    try {
-        const apiCategories = await fetchCategories();
-        allCategories = ['smartphones', ...apiCategories];
-        allCategories = [...new Set(allCategories)];
-        renderCategories();
-    } catch (error) {
-        console.error('Ошибка загрузки категорий:', error);
-        allCategories = [
-            'smartphones',
-            'electronics',
-            'clothing',
-            'home & kitchen',
-            'books',
-            'sports & fitness',
-            'beauty',
-            'toys',
-            'automotive'
-        ];
-        renderCategories();
-    }
-}
-
-function renderCategories() {
+function loadCategories() {
     const categoriesList = document.getElementById('categories-list');
     if (!categoriesList) return;
     
@@ -159,17 +23,13 @@ function renderCategories() {
         const categoryItem = document.createElement('div');
         categoryItem.className = 'category-item';
         
-        let displayName = category;
-        if (category === 'smartphones') displayName = '📱 Смартфоны';
-        else if (category === 'electronics') displayName = '💻 Электроника';
-        else if (category === 'clothing') displayName = '👕 Одежда';
-        else if (category === 'home & kitchen') displayName = '🏠 Дом и кухня';
-        else if (category === 'books') displayName = '📚 Книги';
-        else if (category === 'sports & fitness') displayName = '⚽ Спорт';
-        else if (category === 'beauty') displayName = '💄 Красота';
-        else if (category === 'toys') displayName = '🎮 Игрушки';
-        else if (category === 'automotive') displayName = '🚗 Автотовары';
-        else displayName = `📦 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+        let displayName = '';
+        if (category === 'apple') displayName = '🍎 Apple';
+        else if (category === 'samsung') displayName = '📱 Samsung';
+        else if (category === 'xiaomi') displayName = '⚡ Xiaomi';
+        else if (category === 'google') displayName = '🔍 Google';
+        else if (category === 'huawei') displayName = '✈️ Huawei';
+        else if (category === 'other') displayName = '📱 Другие бренды';
         
         categoryItem.innerHTML = `
             <label class="checkbox-label">
@@ -183,14 +43,6 @@ function renderCategories() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', async function() {
-    updateCartCounter();
-    await loadCategories();
-    await loadProducts();
-    setupEventListeners();
-    loadSavedFilters();
-});
-
 async function loadProducts(append = false) {
     if (isLoading) return;
     
@@ -199,46 +51,104 @@ async function loadProducts(append = false) {
     if (!productsGrid) return;
     
     if (!append) {
-        productsGrid.innerHTML = '<div class="loading">Загрузка товаров...</div>';
+        productsGrid.innerHTML = '<div class="loading">Загрузка телефонов...</div>';
     }
     
     try {
-        const data = await fetchAllGoods(
-            currentPage,
-            12,
-            currentSort,
-            currentFilters
-        );
+        const searchQuery = currentFilters.query ? currentFilters.query.toLowerCase() : '';
+        
+        let filteredPhones = [...phonesData];
+        
+        if (searchQuery) {
+            filteredPhones = filteredPhones.filter(phone => 
+                phone.name.toLowerCase().includes(searchQuery) ||
+                phone.brand.toLowerCase().includes(searchQuery) ||
+                phone.sub_category.toLowerCase().includes(searchQuery) ||
+                (phone.color && phone.color.toLowerCase().includes(searchQuery)) ||
+                (phone.os && phone.os.toLowerCase().includes(searchQuery))
+            );
+        }
+        
+        if (currentFilters.category) {
+            filteredPhones = filteredPhones.filter(phone => 
+                phone.sub_category === currentFilters.category
+            );
+        }
+        
+        if (currentFilters.minPrice) {
+            filteredPhones = filteredPhones.filter(phone => {
+                const price = phone.discount_price || phone.actual_price;
+                return price >= currentFilters.minPrice;
+            });
+        }
+        
+        if (currentFilters.maxPrice) {
+            filteredPhones = filteredPhones.filter(phone => {
+                const price = phone.discount_price || phone.actual_price;
+                return price <= currentFilters.maxPrice;
+            });
+        }
+        
+        if (currentFilters.discountOnly) {
+            filteredPhones = filteredPhones.filter(phone => 
+                phone.discount_price && phone.discount_price < phone.actual_price
+            );
+        }
+        
+        if (currentSort) {
+            filteredPhones.sort((a, b) => {
+                const priceA = a.discount_price || a.actual_price;
+                const priceB = b.discount_price || b.actual_price;
+                
+                switch(currentSort) {
+                    case 'rating_desc':
+                        return b.rating - a.rating;
+                    case 'rating_asc':
+                        return a.rating - b.rating;
+                    case 'price_desc':
+                        return priceB - priceA;
+                    case 'price_asc':
+                        return priceA - priceB;
+                    default:
+                        return 0;
+                }
+            });
+        }
+        
+        const totalCount = filteredPhones.length;
+        const perPage = 12;
+        const startIndex = (currentPage - 1) * perPage;
+        const endIndex = startIndex + perPage;
+        const paginatedPhones = filteredPhones.slice(startIndex, endIndex);
+        
+        totalPages = Math.ceil(totalCount / perPage);
         
         if (!append) {
             productsGrid.innerHTML = '';
         }
         
-        if (data.pagination) {
-            totalPages = Math.ceil(data.pagination.total_count / data.pagination.per_page);
-            updatePageInfo();
-        }
+        updatePageInfo();
         
-        if (data.goods && data.goods.length > 0) {
-            data.goods.forEach(product => {
+        if (paginatedPhones.length > 0) {
+            paginatedPhones.forEach(product => {
                 const productCard = createProductCard(product);
                 productsGrid.appendChild(productCard);
             });
             
             updateLoadMoreButton();
             
-            if (data.goods.length === 0 && !append) {
-                productsGrid.innerHTML = '<div class="no-products">Товары не найдены</div>';
+            if (paginatedPhones.length === 0 && !append) {
+                productsGrid.innerHTML = '<div class="no-products">Телефоны не найдены</div>';
             }
         } else {
             if (!append) {
-                productsGrid.innerHTML = '<div class="no-products">Товары не найдены</div>';
+                productsGrid.innerHTML = '<div class="no-products">Телефоны не найдены</div>';
             }
         }
     } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
+        console.error('Ошибка загрузки телефонов:', error);
         if (!append) {
-            productsGrid.innerHTML = '<div class="error">Ошибка загрузки товаров</div>';
+            productsGrid.innerHTML = '<div class="error">Ошибка загрузки телефонов</div>';
         }
     } finally {
         isLoading = false;
@@ -257,26 +167,20 @@ function createProductCard(product) {
     const cart = JSON.parse(localStorage.getItem('shopzone_cart') || '[]');
     const inCart = cart.includes(product.id.toString());
     
-    let imageUrl = product.image_url || 'images/placeholder.jpg';
+    const brandColors = {
+        apple: '#a2aaad',
+        samsung: '#1428a0',
+        xiaomi: '#ff6900',
+        google: '#4285f4',
+        huawei: '#ff0000',
+        other: '#666666'
+    };
     
-    if (!product.image_url || product.image_url === '') {
-        if (product.main_category === 'smartphones') {
-            const brandColors = {
-                apple: '#a2aaad',
-                samsung: '#1428a0',
-                xiaomi: '#ff6900',
-                google: '#4285f4',
-                huawei: '#ff0000',
-                other: '#666666'
-            };
-            
-            const brand = product.brand || 'other';
-            const color = brandColors[brand] || '#666666';
-            const brandName = product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : 'Phone';
-            
-            imageUrl = `https://via.placeholder.com/300x300/${color.replace('#', '')}/ffffff?text=${encodeURIComponent(brandName)}`;
-        }
-    }
+    const brand = product.brand || 'other';
+    const color = brandColors[brand] || '#666666';
+    const brandName = product.brand ? product.brand.charAt(0).toUpperCase() + product.brand.slice(1) : 'Phone';
+    
+    const imageUrl = `https://via.placeholder.com/300x300/${color.replace('#', '')}/ffffff?text=${encodeURIComponent(brandName)}`;
     
     card.innerHTML = `
         <div class="product-image">
@@ -292,6 +196,11 @@ function createProductCard(product) {
                 <span class="stars">${generateStars(product.rating || 0)}</span>
                 <span class="rating-value">${(product.rating || 0).toFixed(1)}</span>
                 ${product.brand ? `<span class="product-brand">${product.brand}</span>` : ''}
+            </div>
+            <div class="product-details">
+                ${product.storage ? `<span class="detail">${product.storage}</span>` : ''}
+                ${product.color ? `<span class="detail">${product.color}</span>` : ''}
+                ${product.os ? `<span class="detail">${product.os}</span>` : ''}
             </div>
             <div class="product-price">
                 ${hasDiscount ? `
@@ -401,7 +310,7 @@ function setupEventListeners() {
     const searchBtn = document.getElementById('search-btn');
     
     if (searchInput && searchBtn) {
-        searchInput.placeholder = "Поиск товаров (телефоны, iPhone, Samsung...)";
+        searchInput.placeholder = "Поиск телефонов (apple, samsung, xiaomi...)";
         
         const performSearch = () => {
             currentPage = 1;
@@ -599,6 +508,21 @@ style.textContent = `
         border-radius: 4px;
         font-size: 12px;
         margin-left: 10px;
+        color: #666;
+    }
+    
+    .product-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .product-details .detail {
+        background: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
         color: #666;
     }
 `;
