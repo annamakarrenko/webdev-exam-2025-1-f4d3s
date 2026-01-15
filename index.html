@@ -9,19 +9,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
     <style>
-        .logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #ff6b6b;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .logo-icon {
-            font-size: 28px;
-            margin-right: 10px;
-            color: #ff6b6b;
-        }
         .notification {
             padding: 15px 20px;
             margin: 10px;
@@ -30,6 +17,7 @@
             font-weight: 600;
             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
+        
         .success { background: #4CAF50; }
         .error { background: #f44336; }
         .info { background: #2196F3; }
@@ -42,12 +30,12 @@
         <div class="container">
             <div class="header-content">
                 <a href="index.html" class="logo">
-                    <i class="fas fa-shopping-bag logo-icon"></i>
-                    ShopZone
+                    <img src="images/logo.png" alt="ShopZone" class="logo-img">
+                    <span class="logo-text">ShopZone</span>
                 </a>
                 
                 <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Введите запрос (телефон, iphone, samsung...)">
+                    <input type="text" id="search-input" placeholder="Поиск товаров (телефоны, iPhone, Samsung...)">
                     <button id="search-btn">
                         <i class="fas fa-search"></i> Найти
                     </button>
@@ -146,7 +134,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-logo">
-                    <i class="fas fa-shopping-bag"></i>
+                    <img src="images/logo.png" alt="ShopZone" class="footer-logo-img">
                     <span>ShopZone</span>
                 </div>
                 <div class="footer-info">
@@ -159,8 +147,8 @@
         </div>
     </footer>
 
-    <script src="js/api.js"></script>
-    <script src="js/phones.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/phones.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,3 +1,15 @@
+import {
+    showNotification,
+    createOrder,
+    getCart,
+    removeFromCart,
+    clearCart,
+    updateCartCounter,
+    calculateDeliveryCost
+} from './api.js';
+
+import { phonesData } from './phones.js';
+
 let cartItems = [];
 let goodsTotal = 0;
 
@@ -7,6 +19,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupEventListeners();
     setMinDeliveryDate();
 });
+
+function getProductData(productId) {
+    const storedProduct = localStorage.getItem(`shopzone_product_${productId}`);
+    if (storedProduct) {
+        return JSON.parse(storedProduct);
+    }
+    
+    const phone = phonesData.find(p => p.id == productId);
+    if (phone) {
+        return {
+            id: phone.id,
+            name: phone.name,
+            image_url: phone.image_url,
+            rating: phone.rating,
+            actual_price: phone.actual_price,
+            discount_price: phone.discount_price
+        };
+    }
+    
+    return null;
+}
 
 async function loadCartItems() {
     const cartItemsContainer = document.getElementById('cart-items');
@@ -28,7 +61,7 @@ async function loadCartItems() {
     
     cartItems = [];
     for (const productId of cart) {
-        const product = await fetchProduct(productId);
+        const product = getProductData(productId);
         if (product) {
             cartItems.push(product);
         }
@@ -93,6 +126,9 @@ function createCartItem(product) {
     removeBtn.addEventListener('click', function() {
         const productId = this.dataset.id;
         removeFromCart(productId);
+        
+        localStorage.removeItem(`shopzone_product_${productId}`);
+        
         cartItems = cartItems.filter(item => item.id != productId);
         renderCartItems();
         updateTotalPrices();
@@ -224,6 +260,10 @@ async function submitOrder(event) {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
         
         const result = await createOrder(orderData);
+        
+        cartItems.forEach(item => {
+            localStorage.removeItem(`shopzone_product_${item.id}`);
+        });
         
         clearCart();
         updateCartCounter();
