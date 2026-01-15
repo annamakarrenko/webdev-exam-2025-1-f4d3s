@@ -169,7 +169,7 @@ const phonesData = [
         name: "Google Pixel 7a 128GB",
         main_category: "smartphones",
         sub_category: "google",
-        image_url: "images/google/.jpg",
+        image_url: "images/google/pixel7a.jpg",
         rating: 4.4,
         actual_price: 39990,
         discount_price: 36990,
