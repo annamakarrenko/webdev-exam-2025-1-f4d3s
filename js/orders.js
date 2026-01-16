@@ -1,8 +1,6 @@
 let allOrders = [];
 let allProducts = {};
 
-// Импортируем phonesData для работы с товарами
-let phonesData = [];
 
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
@@ -23,12 +21,10 @@ async function loadOrders() {
             return;
         }
         
-        // Загружаем phonesData
-        try {
-            const module = await import('./phones.js');
-            phonesData = module.phonesData;
-        } catch (error) {
-            console.error('Ошибка загрузки данных о товарах:', error);
+        // Проверяем, что phonesData доступна
+        if (typeof phonesData === 'undefined') {
+            ordersContainer.innerHTML = '<div class="error">Ошибка загрузки данных о товарах</div>';
+            return;
         }
         
         await loadProductsInfo();
@@ -163,6 +159,11 @@ function formatDeliveryInfo(order) {
     if (!order.delivery_date || !order.delivery_interval) return 'Не указано';
     
     return `${order.delivery_date} ${order.delivery_interval}`;
+}
+
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 function truncateText(text, maxLength) {

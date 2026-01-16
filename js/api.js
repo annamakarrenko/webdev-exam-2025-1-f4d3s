@@ -187,19 +187,13 @@ function calculateDeliveryCost(deliveryDate, deliveryInterval) {
     return cost;
 }
 
-// Функция для получения товара по ID (из локальных данных)
-async function fetchProduct(productId) {
-    // Импортируем phonesData динамически
-    try {
-        const { phonesData } = await import('./phones.js');
+function fetchProduct(productId) {
+    if (typeof phonesData !== 'undefined' && Array.isArray(phonesData)) {
         return phonesData.find(phone => phone.id == productId) || null;
-    } catch (error) {
-        console.error('Ошибка загрузки товара:', error);
-        return null;
     }
+    return null;
 }
 
-// Функция для получения всех товаров (для фильтрации категорий)
 async function getAllProducts() {
     try {
         const { phonesData } = await import('./phones.js');

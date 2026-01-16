@@ -1,8 +1,8 @@
+// cart.js
 let cartItems = [];
 let goodsTotal = 0;
 
-// Импортируем phonesData для работы с товарами
-let phonesData = [];
+// phonesData доступна глобально после загрузки phones.js
 
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
@@ -29,12 +29,10 @@ async function loadCartItems() {
     emptyCartContainer.style.display = 'none';
     cartItemsContainer.innerHTML = '<div class="loading">Загрузка корзины...</div>';
     
-    // Загружаем phonesData
-    try {
-        const module = await import('./phones.js');
-        phonesData = module.phonesData;
-    } catch (error) {
-        console.error('Ошибка загрузки данных о товарах:', error);
+    // Проверяем, что phonesData доступна
+    if (typeof phonesData === 'undefined') {
+        cartItemsContainer.innerHTML = '<div class="error">Ошибка загрузки данных о товарах</div>';
+        return;
     }
     
     cartItems = [];
@@ -226,7 +224,6 @@ async function submitOrder(event) {
         good_ids: cartItems.map(item => item.id)
     };
     
-    // Форматируем дату в формат dd.mm.yyyy для API
     if (orderData.delivery_date) {
         const date = new Date(orderData.delivery_date);
         const day = String(date.getDate()).padStart(2, '0');
@@ -245,8 +242,6 @@ async function submitOrder(event) {
         clearCart();
         updateCartCounter();
         
-        showNotification('Заказ успешно оформлен! Через 2 секунды вы будете перенаправлены на главную страницу.', 'success');
-        
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
@@ -257,7 +252,5 @@ async function submitOrder(event) {
         const submitBtn = document.getElementById('submit-btn');
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-check"></i> Оформить';
-        
-        showNotification(`Ошибка оформления заказа: ${error.message}`, 'error');
     }
 }

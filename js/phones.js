@@ -5,7 +5,7 @@ const phonesData = [
         name: "Apple iPhone 15 Pro Max 256GB",
         main_category: "smartphones",
         sub_category: "apple",
-        image_url: "images/apple/15promax.jpg",
+        image_url: "images/apple/15pro.jpg",
         rating: 4.8,
         actual_price: 129990,
         discount_price: 124990,
@@ -395,7 +395,7 @@ const phonesData = [
         name: "Apple iPhone 17 Pro Max 256GB",
         main_category: "smartphones",
         sub_category: "apple",
-        image_url: "images/apple/17.jpg",
+        image_url: "images/apple/17promax.jpg",
         rating: 4.5,
         actual_price: 79990,
         discount_price: 76990,
@@ -451,4 +451,3 @@ const phonesData = [
         os: "Android 13"
     }
 ];
-

@@ -1,5 +1,6 @@
-import { phonesData } from './phones.js';
+// main.js - УБЕРИТЕ импорт!
 
+// phonesData теперь доступна глобально после загрузки phones.js
 let currentPage = 1;
 let currentSort = '';
 let currentFilters = {};
@@ -8,6 +9,16 @@ let isLoading = false;
 let allCategories = ['apple', 'samsung', 'xiaomi', 'google', 'huawei', 'other'];
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Проверяем, что данные загрузились
+    if (typeof phonesData === 'undefined') {
+        console.error('phonesData не загружена');
+        const productsGrid = document.getElementById('products-grid');
+        if (productsGrid) {
+            productsGrid.innerHTML = '<div class="error">Ошибка загрузки данных о товарах</div>';
+        }
+        return;
+    }
+    
     updateCartCounter();
     loadCategories();
     await loadProducts();
@@ -256,8 +267,7 @@ function truncateText(text, maxLength) {
 function updatePageInfo() {
     const pageInfo = document.getElementById('page-info');
     if (pageInfo) {
-        const totalProducts = phonesData.length;
-        pageInfo.textContent = `Страница ${currentPage} из ${totalPages} (Всего товаров: ${totalProducts})`;
+        pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
     }
 }
 
