@@ -21,7 +21,6 @@ async function loadOrders() {
             return;
         }
         
-        // Проверяем, что phonesData доступна
         if (typeof phonesData === 'undefined') {
             ordersContainer.innerHTML = '<div class="error">Ошибка загрузки данных о товарах</div>';
             return;
@@ -171,7 +170,6 @@ function truncateText(text, maxLength) {
     return text.substring(0, maxLength) + '...';
 }
 
-// Глобальные функции для модальных окон
 window.viewOrder = async function(orderId) {
     const order = allOrders.find(o => o.id == orderId);
     if (!order) return;

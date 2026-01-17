@@ -1,6 +1,3 @@
-// main.js - УБЕРИТЕ импорт!
-
-// phonesData теперь доступна глобально после загрузки phones.js
 let currentPage = 1;
 let currentSort = '';
 let currentFilters = {};
@@ -9,7 +6,6 @@ let isLoading = false;
 let allCategories = ['apple', 'samsung', 'xiaomi', 'google', 'huawei', 'other'];
 
 document.addEventListener('DOMContentLoaded', async function() {
-    // Проверяем, что данные загрузились
     if (typeof phonesData === 'undefined') {
         console.error('phonesData не загружена');
         const productsGrid = document.getElementById('products-grid');

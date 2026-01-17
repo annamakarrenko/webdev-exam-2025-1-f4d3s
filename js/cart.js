@@ -1,8 +1,6 @@
-// cart.js
 let cartItems = [];
 let goodsTotal = 0;
 
-// phonesData доступна глобально после загрузки phones.js
 
 document.addEventListener('DOMContentLoaded', async function() {
     updateCartCounter();
@@ -29,7 +27,6 @@ async function loadCartItems() {
     emptyCartContainer.style.display = 'none';
     cartItemsContainer.innerHTML = '<div class="loading">Загрузка корзины...</div>';
     
-    // Проверяем, что phonesData доступна
     if (typeof phonesData === 'undefined') {
         cartItemsContainer.innerHTML = '<div class="error">Ошибка загрузки данных о товарах</div>';
         return;

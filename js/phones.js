@@ -1,4 +1,3 @@
-
 const phonesData = [
     {
         id: 101,

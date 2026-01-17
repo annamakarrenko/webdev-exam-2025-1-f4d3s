@@ -1,7 +1,6 @@
 const API_BASE_URL = 'https://edu.std-900.ist.mospolytech.ru/exam-2024-1/api';
 const API_KEY = '6a48b49a-943d-4bd4-868c-94a15212daff';
 
-// Функция для отображения уведомлений
 function showNotification(message, type = 'info') {
     const notificationArea = document.getElementById('notification-area');
     if (!notificationArea) return;
@@ -17,7 +16,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Работа с заказами через API
 async function fetchOrders() {
     const url = `${API_BASE_URL}/orders?api_key=${API_KEY}`;
     
@@ -116,7 +114,6 @@ async function deleteOrder(orderId) {
     }
 }
 
-// Работа с корзиной в localStorage
 const CART_STORAGE_KEY = 'shopzone_cart';
 
 function getCart() {
@@ -165,21 +162,18 @@ function updateCartCounter() {
     }
 }
 
-// Расчет стоимости доставки
 function calculateDeliveryCost(deliveryDate, deliveryInterval) {
-    let cost = 200; // Базовая стоимость
+    let cost = 200; 
     
     if (!deliveryDate || !deliveryInterval) return cost;
     
     const date = new Date(deliveryDate);
-    const dayOfWeek = date.getDay(); // 0 - воскресенье, 6 - суббота
+    const dayOfWeek = date.getDay();
     
-    // В выходные дни +300 руб
     if (dayOfWeek === 0 || dayOfWeek === 6) {
         cost += 300;
     }
     
-    // В будние дни в вечерние часы +200 руб
     if (deliveryInterval === '18:00-22:00' && dayOfWeek >= 1 && dayOfWeek <= 5) {
         cost += 200;
     }
